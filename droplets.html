@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Math Droplets</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+    height:100vh;
+    background:linear-gradient(135deg,#667eea,#764ba2);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-family:Arial,sans-serif;
+    color:white;
+}
+#game{position:relative;width:800px;height:600px;border-radius:12px;overflow:hidden}
+canvas{background:linear-gradient(#87CEEB,#E6F7FF)}
+.ui{position:absolute;inset:0;pointer-events:none}
+.box{
+    position:absolute;
+    background:rgba(0,0,0,.7);
+    padding:10px 18px;
+    border-radius:12px;
+    font-weight:bold;
+    pointer-events:auto;
+}
+#score{top:20px;left:20px}
+#combo{top:20px;left:50%;transform:translateX(-50%)}
+#lives{top:20px;right:20px;font-size:26px}
+.heart.lost{opacity:.3;filter:grayscale(1)}
+#inputBox{
+    position:absolute;
+    bottom:30px;
+    left:50%;
+    transform:translateX(-50%);
+    width:420px;height:60px;
+    border-radius:30px;
+    background:rgba(0,0,0,.7);
+    border:3px solid white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    pointer-events:auto;
+}
+#answer{
+    width:90%;height:80%;
+    font-size:28px;
+    background:transparent;
+    border:none;outline:none;
+    color:white;text-align:center;
+}
+.overlay{
+    position:absolute;inset:0;
+    background:rgba(0,0,0,.9);
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    gap:20px;z-index:10;
+}
+#gameOver{display:none}
+
+#settingsBtn{
+    position:absolute;
+    top:20px;
+    right:20px;
+    width:50px;
+    height:50px;
+    background:rgba(0,0,0,.7);
+    border:3px solid white;
+    border-radius:50%;
+    display:none;
+    justify-content:center;
+    align-items:center;
+    cursor:pointer;
+    font-size:24px;
+    z-index:11;
+    pointer-events:auto;
+    transition:transform .2s;
+}
+#settingsBtn:hover{transform:scale(1.1)}
+#settingsBtn.show{display:flex}
+
+#settingsModal{
+    position:absolute;
+    top:50%;left:50%;
+    transform:translate(-50%,-50%);
+    width:500px;max-height:550px;
+    background:rgba(20,20,40,.98);
+    border:3px solid white;
+    border-radius:20px;
+    padding:30px;
+    display:none;
+    flex-direction:column;
+    z-index:12;
+    pointer-events:auto;
+    overflow-y:auto;
+}
+#settingsModal.show{display:flex}
+.settings-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}
+.settings-header h2{font-size:28px}
+#closeSettings{
+    background:transparent;border:none;color:white;
+    font-size:32px;cursor:pointer;padding:0;
+    width:32px;height:32px;
+    display:flex;align-items:center;justify-content:center;
+}
+#closeSettings:hover{opacity:.7}
+.settings-section{margin-bottom:25px}
+.settings-section h3{font-size:18px;margin-bottom:12px;color:#a8d8ff}
+.setting-item{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:15px;padding:12px;
+    background:rgba(255,255,255,.1);border-radius:8px;
+}
+.setting-item label{font-size:15px;flex:1}
+.setting-item input[type="range"]{width:150px;margin-left:15px}
+.setting-item select{
+    padding:6px 12px;background:rgba(255,255,255,.2);
+    color:white;border:2px solid white;border-radius:6px;
+    font-size:14px;cursor:pointer;
+}
+.setting-item input[type="checkbox"]{width:22px;height:22px;cursor:pointer}
+.slider-value{min-width:40px;text-align:center;margin-left:10px;font-weight:bold}
+.btn-group{display:flex;gap:10px;margin-top:20px}
+.btn{
+    flex:1;padding:12px;border:2px solid white;border-radius:10px;
+    background:rgba(255,255,255,.2);color:white;font-size:16px;
+    font-weight:bold;cursor:pointer;transition:all .2s;
+}
+.btn:hover{background:rgba(255,255,255,.4);transform:translateY(-2px)}
+.btn-primary{background:rgba(46,213,115,.8)}
+.btn-primary:hover{background:rgba(46,213,115,1)}
+</style>
+</head>
+
+<body>
+<div id="game">
+<canvas id="c" width="800" height="600"></canvas>
+
+<div class="ui">
+    <div id="score" class="box">Score: 0</div>
+    <div id="lives" class="box">
+        <span class="heart">❤️</span>
+        <span class="heart">❤️</span>
+        <span class="heart">❤️</span>
+    </div>
+    <div id="combo" class="box">Combo: 0x</div>
+
+    <div id="inputBox">
+        <input id="answer" placeholder="Type answer & press Enter" disabled>
+    </div>
+
+    <div id="settingsBtn" title="Settings">⚙️</div>
+
+    <div id="settingsModal">
+        <div class="settings-header">
+            <h2>⚙️ Settings</h2>
+            <button id="closeSettings">×</button>
+        </div>
+
+        <div class="settings-section">
+            <h3>🎮 Gameplay</h3>
+            <div class="setting-item">
+                <label>Difficulty</label>
+                <select id="difficulty">
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+            </div>
+            <div class="setting-item">
+                <label>Drop Speed</label>
+                <input type="range" id="speedSlider" min="30" max="120" value="60" step="10">
+                <span class="slider-value" id="speedValue">60</span>
+            </div>
+            <div class="setting-item">
+                <label>Spawn Rate (seconds)</label>
+                <input type="range" id="spawnSlider" min="1" max="5" value="2.5" step="0.5">
+                <span class="slider-value" id="spawnValue">2.5</span>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h3>🔊 Audio</h3>
+            <div class="setting-item">
+                <label>Master Volume</label>
+                <input type="range" id="volumeSlider" min="0" max="100" value="70" step="10">
+                <span class="slider-value" id="volumeValue">70%</span>
+            </div>
+            <div class="setting-item">
+                <label>Sound Effects</label>
+                <input type="checkbox" id="sfxToggle" checked>
+            </div>
+            <div class="setting-item">
+                <label>Background Music</label>
+                <input type="checkbox" id="musicToggle" checked>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h3>🎨 Display</h3>
+            <div class="setting-item">
+                <label>Show Combo</label>
+                <input type="checkbox" id="comboToggle" checked>
+            </div>
+            <div class="setting-item">
+                <label>Animations</label>
+                <input type="checkbox" id="animToggle" checked>
+            </div>
+            <div class="setting-item">
+                <label>Color Scheme</label>
+                <select id="colorScheme">
+                    <option value="default">Default</option>
+                    <option value="dark">Dark Mode</option>
+                    <option value="colorblind">Colorblind Friendly</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn" id="resetDefaults">Reset to Default</button>
+            <button class="btn btn-primary" id="applySettings">Apply</button>
+        </div>
+    </div>
+
+    <div id="startScreen" class="overlay">
+        <h1>MATH DROPLETS</h1>
+        <p>Press <b>S</b> to Start</p>
+    </div>
+
+    <div id="gameOver" class="overlay">
+        <h1>GAME OVER</h1>
+        <h2 id="finalScore"></h2>
+        <p>Press <b>R</b> to Restart</p>
+    </div>
+</div>
+</div>
+
+<script>
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+
+const scoreEl  = document.getElementById("score");
+const comboEl  = document.getElementById("combo");
+const hearts   = document.querySelectorAll(".heart");
+const input    = document.getElementById("answer");
+
+const startScreen    = document.getElementById("startScreen");
+const gameOverScreen = document.getElementById("gameOver");
+const finalScoreEl   = document.getElementById("finalScore");
+
+const settingsBtn   = document.getElementById("settingsBtn");
+const settingsModal = document.getElementById("settingsModal");
+const closeSettings = document.getElementById("closeSettings");
+
+let drops = [];
+let score = 0, combo = 0, lives = 3;
+let lastTime = 0, spawnTimer = 0;
+const ground = 540;
+let running = false;
+
+let settings = {
+    difficulty: "easy",
+    speed: 60,
+    spawnRate: 2500,
+    volume: 70,
+    sfxEnabled: true,
+    musicEnabled: true,
+    comboVisible: true,
+    animationsEnabled: true,
+    colorScheme: "default"
+};
+
+/* ---- SETTINGS UI ---- */
+const speedSlider = document.getElementById("speedSlider");
+const speedValue  = document.getElementById("speedValue");
+const spawnSlider = document.getElementById("spawnSlider");
+const spawnValue  = document.getElementById("spawnValue");
+const volumeSlider = document.getElementById("volumeSlider");
+const volumeValue  = document.getElementById("volumeValue");
+
+speedSlider.addEventListener("input", e => { speedValue.textContent = e.target.value; });
+spawnSlider.addEventListener("input", e => { spawnValue.textContent = e.target.value; });
+volumeSlider.addEventListener("input", e => { volumeValue.textContent = e.target.value + "%"; });
+
+settingsBtn.addEventListener("click", () => { loadSettings(); settingsModal.classList.add("show"); });
+closeSettings.addEventListener("click", () => { settingsModal.classList.remove("show"); });
+document.getElementById("applySettings").addEventListener("click", () => { saveSettings(); settingsModal.classList.remove("show"); });
+document.getElementById("resetDefaults").addEventListener("click", resetToDefaults);
+
+function loadSettings() {
+    document.getElementById("difficulty").value = settings.difficulty;
+    speedSlider.value = settings.speed;
+    speedValue.textContent = settings.speed;
+    spawnSlider.value = settings.spawnRate / 1000;
+    spawnValue.textContent = settings.spawnRate / 1000;
+    volumeSlider.value = settings.volume;
+    volumeValue.textContent = settings.volume + "%";
+    document.getElementById("sfxToggle").checked = settings.sfxEnabled;
+    document.getElementById("musicToggle").checked = settings.musicEnabled;
+    document.getElementById("comboToggle").checked = settings.comboVisible;
+    document.getElementById("animToggle").checked = settings.animationsEnabled;
+    document.getElementById("colorScheme").value = settings.colorScheme;
+}
+
+function saveSettings() {
+    settings.difficulty        = document.getElementById("difficulty").value;
+    settings.speed             = parseInt(speedSlider.value);
+    settings.spawnRate         = parseFloat(spawnSlider.value) * 1000;
+    settings.volume            = parseInt(volumeSlider.value);
+    settings.sfxEnabled        = document.getElementById("sfxToggle").checked;
+    settings.musicEnabled      = document.getElementById("musicToggle").checked;
+    settings.comboVisible      = document.getElementById("comboToggle").checked;
+    settings.animationsEnabled = document.getElementById("animToggle").checked;
+    settings.colorScheme       = document.getElementById("colorScheme").value;
+    comboEl.style.display      = settings.comboVisible ? "block" : "none";
+    applyColorScheme();
+}
+
+function resetToDefaults() {
+    settings = { difficulty:"easy", speed:60, spawnRate:2500, volume:70,
+                 sfxEnabled:true, musicEnabled:true, comboVisible:true,
+                 animationsEnabled:true, colorScheme:"default" };
+    loadSettings();
+}
+
+function applyColorScheme() {
+    switch (settings.colorScheme) {
+        case "dark":        document.body.style.background = "linear-gradient(135deg,#1a1a2e,#16213e)"; break;
+        case "colorblind":  document.body.style.background = "linear-gradient(135deg,#4a5568,#2d3748)"; break;
+        default:            document.body.style.background = "linear-gradient(135deg,#667eea,#764ba2)";
+    }
+}
+
+/* ---- KEYBOARD: start / restart (only when NOT running) ---- */
+document.addEventListener("keydown", e => {
+    if (running) return;
+    if (e.key.toLowerCase() === "s") { startGame(); e.preventDefault(); }
+    if (e.key.toLowerCase() === "r" && gameOverScreen.style.display === "flex") { startGame(); e.preventDefault(); }
+});
+
+/* ---- GAME LOOP ---- */
+function loop(t) {
+    if (!running) return;
+    if (!lastTime) lastTime = t;
+    const dt = t - lastTime;
+    lastTime = t;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+}
+
+/* ---- START ---- */
+function startGame() {
+    resetGame();
+    startScreen.style.display     = "none";
+    gameOverScreen.style.display  = "none";
+    settingsBtn.classList.remove("show");
+    settingsModal.classList.remove("show");
+    running = true;
+    input.disabled = false;
+    input.focus();
+    lastTime = 0;
+    requestAnimationFrame(loop);
+}
+
+/* ---- RESET ---- */
+function resetGame() {
+    drops = [];
+    score = 0; combo = 0; lives = 3;
+    spawnTimer = 0;
+    updateUI(); updateLives();
+}
+
+/* ---- UPDATE ---- */
+function update(dt) {
+    spawnTimer += dt;
+    if (spawnTimer > settings.spawnRate) { spawnDrop(); spawnTimer = 0; }
+
+    for (let i = drops.length - 1; i >= 0; i--) {
+        drops[i].y += (settings.speed * dt) / 1000;
+        if (drops[i].y >= ground) {
+            drops.splice(i, 1);
+            loseLife();
+        }
+    }
+}
+
+/* ---- DRAW ---- */
+function draw() {
+    ctx.clearRect(0, 0, 800, 600);
+
+    // Ground
+    ctx.fillStyle = "#8B4513";
+    ctx.fillRect(0, ground, 800, 60);
+
+    // Find the lowest drop to highlight it as the active target
+    let lowestIdx = -1;
+    let lowestY   = -Infinity;
+    drops.forEach((d, i) => { if (d.y > lowestY) { lowestY = d.y; lowestIdx = i; } });
+
+    drops.forEach((d, i) => {
+        const isActive = (i === lowestIdx);
+
+        // Droplet body
+        ctx.fillStyle = isActive ? "#e74c3c" : "#3498db";
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, 30, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Active ring
+        if (isActive) {
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(d.x, d.y, 35, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        // Problem text
+        ctx.fillStyle = "white";
+        ctx.font = "bold 22px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(`${d.a} ${d.op} ${d.b}`, d.x, d.y);
+    });
+}
+
+/* ---- PROBLEM GENERATOR ---- */
+function generateProblem() {
+    const ops = ["+", "-", "×", "÷"];
+    const op  = ops[Math.floor(Math.random() * ops.length)];
+    let a, b, ans;
+
+    if (settings.difficulty === "easy") {
+        switch (op) {
+            case "+": a = rand(1,20);  b = rand(1,20);  ans = a + b; break;
+            case "-": a = rand(5,20);  b = rand(1,a);   ans = a - b; break;
+            case "×": a = rand(1,10);  b = rand(1,10);  ans = a * b; break;
+            case "÷": b = rand(1,10);  ans = rand(1,10); a = b * ans; break;
+        }
+    } else if (settings.difficulty === "medium") {
+        switch (op) {
+            case "+": a = rand(10,50); b = rand(10,50); ans = a + b; break;
+            case "-": a = rand(20,50); b = rand(1,a);   ans = a - b; break;
+            case "×": a = rand(1,15);  b = rand(1,15);  ans = a * b; break;
+            case "÷": b = rand(1,15);  ans = rand(1,15); a = b * ans; break;
+        }
+    } else {
+        switch (op) {
+            case "+": a = rand(50,100); b = rand(50,100); ans = a + b; break;
+            case "-": a = rand(50,100); b = rand(1,a);    ans = a - b; break;
+            case "×": a = rand(10,20);  b = rand(10,20);  ans = a * b; break;
+            case "÷": b = rand(5,20);   ans = rand(5,20);  a = b * ans; break;
+        }
+    }
+    return { a, b, op, ans };
+}
+
+function rand(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/* ---- SPAWN ---- */
+function spawnDrop() {
+    const p = generateProblem();
+    drops.push({ x: rand(60, 740), y: -40, ...p });
+}
+
+/* ---- INPUT: answer checking ---- */
+input.addEventListener("keydown", e => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+
+    const typed = parseInt(input.value, 10);
+    input.value = "";
+
+    if (isNaN(typed)) return;
+
+    // Find the lowest drop (the active one) and check its answer
+    let lowestIdx = -1, lowestY = -Infinity;
+    drops.forEach((d, i) => { if (d.y > lowestY) { lowestY = d.y; lowestIdx = i; } });
+
+    if (lowestIdx === -1) return;
+
+    if (typed === drops[lowestIdx].ans) {
+        score += 20;
+        combo++;
+        drops.splice(lowestIdx, 1);
+    } else {
+        combo = 0;
+    }
+    updateUI();
+});
+
+/* ---- LIVES ---- */
+function loseLife() {
+    lives--; combo = 0;
+    updateLives(); updateUI();
+    if (lives <= 0) endGame();
+}
+function updateLives() {
+    hearts.forEach((h, i) => h.classList.toggle("lost", i >= lives));
+}
+
+/* ---- UI ---- */
+function updateUI() {
+    scoreEl.textContent = "Score: " + score;
+    comboEl.textContent = "Combo: " + combo + "x";
+}
+
+/* ---- GAME OVER ---- */
+function endGame() {
+    running = false;
+    input.disabled = true;
+    finalScoreEl.textContent = "Score: " + score;
+    gameOverScreen.style.display = "flex";
+    settingsBtn.classList.add("show");
+}
+</script>
+</body>
+</html>
