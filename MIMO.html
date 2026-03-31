@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>MIMO</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Bricolage+Grotesque:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080a10;--bg2:#0d0f1a;--bg3:#121525;--bg4:#191d2e;--bg5:#1e2338;
+  --border:#1c2035;--border2:#232840;--borderhi:#2e3555;
+  --text:#dde1f5;--text2:#6e7699;--text3:#3d4466;
+  --accent:#4f7ef5;--accentd:#3a65d4;
+  --green:#1db975;--greend:#178f58;
+  --yellow:#e8a430;--red:#e05252;--purple:#9b6ff5;--cyan:#29c4e0;
+  --font:'Bricolage Grotesque',sans-serif;
+  --mono:'IBM Plex Mono',monospace;
+}
+html{font-size:15px}
+body{background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.6;min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+a{color:inherit;text-decoration:none}
+button{font-family:var(--font)}
+
+/* NAV */
+#nav{position:sticky;top:0;z-index:200;height:50px;background:rgba(8,10,16,.96);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:0}
+.nav-logo{display:flex;align-items:center;gap:9px;cursor:pointer;padding:6px 10px;border-radius:9px;transition:background .15s}
+.nav-logo:hover{background:var(--bg3)}
+.nav-logo-mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--accent) 0%,var(--purple) 100%);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.nav-logo-text{font-size:17px;font-weight:800;letter-spacing:-.5px}
+.nav-logo-text span{color:var(--accent)}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.prog-badge{display:flex;align-items:center;gap:7px;padding:5px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:20px;font-size:12px;font-weight:700;color:var(--text2)}
+.prog-badge b{color:var(--accent)}
+.nav-overall-bar{width:80px;height:4px;background:var(--bg5);border-radius:2px;overflow:hidden}
+.nav-overall-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--purple));border-radius:2px;transition:width .5s ease}
+
+/* APP LAYOUT */
+#app{display:flex;height:calc(100vh - 50px);overflow:hidden}
+
+/* SIDEBAR */
+#sb{width:272px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden}
+.sb-head{padding:16px 16px 12px;border-bottom:1px solid var(--border)}
+.sb-path{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);margin-bottom:4px}
+.sb-title{font-size:16px;font-weight:800;letter-spacing:-.4px}
+.sb-prog{margin:10px 12px 0;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.sb-prog-label{font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px;font-family:var(--mono)}
+.sb-prog-bar{height:4px;background:var(--bg5);border-radius:2px;overflow:hidden;margin-bottom:6px}
+.sb-prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--purple));border-radius:2px;transition:width .5s ease}
+.sb-prog-stats{display:flex;justify-content:space-between;font-size:10px;color:var(--text2);font-weight:700;font-family:var(--mono)}
+.sb-scroll{flex:1;overflow-y:auto;padding:8px}
+.sb-scroll::-webkit-scrollbar{width:3px}
+
+.sb-sec{border-radius:9px;margin-bottom:2px;border:1px solid transparent;transition:border-color .15s}
+.sb-sec.sb-open{border-color:var(--border2)}
+.sb-sec-btn{width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;background:transparent;border:none;color:var(--text);cursor:pointer;text-align:left;border-radius:9px;transition:background .15s}
+.sb-sec-btn:hover,.sb-sec.sb-open .sb-sec-btn{background:var(--bg3)}
+.sb-sec-num{font-size:10px;font-weight:700;color:var(--text3);font-family:var(--mono);min-width:18px;line-height:1}
+.sb-sec-name{font-size:12px;font-weight:700;flex:1;line-height:1.2}
+.sb-sec-dot{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;flex-shrink:0}
+.dot-locked{background:var(--bg5);color:var(--text3)}
+.dot-active{background:var(--accent);color:#fff}
+.dot-done{background:var(--green);color:#fff}
+.sb-lessons{display:none;padding:3px 8px 6px 30px;flex-direction:column;gap:2px}
+.sb-sec.sb-open .sb-lessons{display:flex}
+.sb-lesson{padding:4px 8px;border-radius:6px;font-size:11px;color:var(--text2);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px;font-weight:600;border:1px solid transparent}
+.sb-lesson:hover{background:var(--bg4);color:var(--text)}
+.sb-lesson.sl-active{background:rgba(79,126,245,.1);color:var(--accent);border-color:rgba(79,126,245,.2)}
+.sb-lesson.sl-done{color:var(--green)}
+.sb-lesson.sl-locked{color:var(--text3);cursor:default}
+.sl-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;background:currentColor;opacity:.7}
+.sl-ck{margin-left:auto;font-size:9px}
+
+/* MAIN */
+#main{flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;position:relative}
+#main::-webkit-scrollbar{width:4px}
+
+.panel{width:100%;max-width:740px;padding:32px 28px 100px;display:none;flex-direction:column;gap:22px;animation:panelIn .25s ease}
+.panel.show{display:flex}
+@keyframes panelIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* HOME PANEL */
+.sec-hero{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:24px 28px;position:relative;overflow:hidden}
+.sec-hero::after{content:'';position:absolute;top:-50px;right:-50px;width:200px;height:200px;background:radial-gradient(circle,rgba(79,126,245,.1),transparent 70%);pointer-events:none}
+.hero-eyebrow{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.12em;font-family:var(--mono);margin-bottom:6px}
+.hero-title{font-size:26px;font-weight:800;letter-spacing:-.7px;line-height:1.2;margin-bottom:6px}
+.hero-desc{font-size:13px;color:var(--text2);line-height:1.6;max-width:480px;margin-bottom:16px}
+.hero-chips{display:flex;gap:8px;flex-wrap:wrap}
+.hchip{padding:4px 10px;background:var(--bg4);border:1px solid var(--border2);border-radius:20px;font-size:11px;font-weight:600;color:var(--text2)}
+.hero-ring{position:absolute;right:28px;top:50%;transform:translateY(-50%)}
+.hero-ring-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;font-family:var(--mono);color:var(--text)}
+
+.panel-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);padding-bottom:10px;border-bottom:1px solid var(--border)}
+.lessons-list{display:flex;flex-direction:column;gap:6px}
+.lesson-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;cursor:pointer;transition:all .2s;position:relative}
+.lesson-row:hover:not(.lr-locked){background:var(--bg3);border-color:var(--border2);transform:translateX(3px)}
+.lesson-row.lr-active:not(.lr-done){background:var(--bg3);border-color:rgba(79,126,245,.35);box-shadow:0 0 0 1px rgba(79,126,245,.1)}
+.lesson-row.lr-done{border-color:rgba(29,185,117,.2)}
+.lesson-row.lr-locked{opacity:.4;cursor:default}
+.lr-pulse{position:absolute;inset:-4px;border-radius:16px;border:2px solid var(--accent);animation:plsA 2.5s ease-in-out infinite;pointer-events:none}
+@keyframes plsA{0%,100%{opacity:.6}50%{opacity:.1}}
+.lr-num{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text3);min-width:22px}
+.lr-body{flex:1}
+.lr-title{font-size:14px;font-weight:700;letter-spacing:-.2px}
+.lr-sub{font-size:11px;color:var(--text2);margin-top:1px}
+.lr-right{display:flex;align-items:center;gap:7px}
+.type-tag{padding:2px 8px;border-radius:5px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-family:var(--mono)}
+.tt-learn{background:rgba(79,126,245,.12);color:var(--accent);border:1px solid rgba(79,126,245,.2)}
+.tt-practice{background:rgba(232,164,48,.1);color:var(--yellow);border:1px solid rgba(232,164,48,.2)}
+.tt-project{background:rgba(155,111,245,.1);color:var(--purple);border:1px solid rgba(155,111,245,.2)}
+.lr-check{width:22px;height:22px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;flex-shrink:0}
+.lr-score{font-family:var(--mono);font-size:10px;color:var(--text2)}
+.lr-lock{color:var(--text3);font-size:13px}
+
+.next-sec-card{background:linear-gradient(135deg,rgba(79,126,245,.06),rgba(155,111,245,.06));border:1px solid rgba(79,126,245,.18);border-radius:14px;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.nsc-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);margin-bottom:4px}
+.nsc-title{font-size:18px;font-weight:800;letter-spacing:-.4px;margin-bottom:2px}
+.nsc-desc{font-size:12px;color:var(--text2);margin-bottom:12px}
+.nsc-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:var(--accent);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);transition:background .15s}
+.nsc-btn:hover{background:var(--accentd)}
+
+/* QUIZ PANEL */
+#quiz-panel{padding-bottom:80px}
+.qz-topbar{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.qz-back{background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:7px 14px;border-radius:9px;cursor:pointer;font-size:12px;font-weight:700;font-family:var(--font);transition:background .15s;display:flex;align-items:center;gap:5px}
+.qz-back:hover{background:var(--bg3)}
+.qz-lesson-name{font-size:14px;font-weight:800;flex:1;text-align:center;letter-spacing:-.3px}
+.qz-counter{font-family:var(--mono);font-size:12px;color:var(--text2);font-weight:600;white-space:nowrap}
+.qz-prog{height:3px;background:var(--bg5);border-radius:2px;overflow:hidden;margin-bottom:24px}
+.qz-prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--purple));border-radius:2px;transition:width .35s ease}
+
+.q-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:26px 28px;margin-bottom:16px}
+.q-eyebrow{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
+.q-text{font-size:17px;font-weight:700;letter-spacing:-.3px;line-height:1.45;margin-bottom:0}
+.q-code{background:var(--bg);border:1px solid var(--border2);border-radius:9px;padding:14px 16px;font-family:var(--mono);font-size:12px;line-height:1.9;overflow-x:auto;white-space:pre;margin-top:14px;margin-bottom:0;color:#aab4d4;border-left:3px solid var(--accent)}
+.q-code .kw{color:#c792ea}
+.q-code .str{color:#c3e88d}
+.q-code .num{color:#f78c6c}
+.q-code .cmt{color:#455670;font-style:italic}
+.q-code .bi{color:#82aaff}
+
+.opts{display:flex;flex-direction:column;gap:8px;margin-top:20px}
+.opt{display:flex;align-items:flex-start;gap:12px;padding:12px 15px;background:var(--bg3);border:1.5px solid var(--border2);border-radius:11px;cursor:pointer;transition:all .18s;-webkit-user-select:none;user-select:none}
+.opt:hover:not(.opt-dis){background:var(--bg4);border-color:rgba(79,126,245,.4);transform:translateX(2px)}
+.opt-ltr{width:26px;height:26px;border-radius:7px;background:var(--bg4);border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text2);flex-shrink:0;transition:all .18s;margin-top:1px}
+.opt-txt{flex:1;font-family:var(--mono);font-size:12px;line-height:1.5;padding-top:2px}
+.opt.opt-sel{border-color:var(--accent);background:rgba(79,126,245,.07)}
+.opt.opt-sel .opt-ltr{background:var(--accent);border-color:var(--accent);color:#fff}
+.opt.opt-ok{border-color:var(--green);background:rgba(29,185,117,.06)}
+.opt.opt-ok .opt-ltr{background:var(--green);border-color:var(--green);color:#fff}
+.opt.opt-ng{border-color:var(--red);background:rgba(224,82,82,.06)}
+.opt.opt-ng .opt-ltr{background:var(--red);border-color:var(--red);color:#fff}
+.opt.opt-dis{cursor:default;transform:none!important}
+
+.feedback{margin-top:14px;padding:13px 16px;border-radius:10px;display:none;gap:10px;font-size:12px;line-height:1.6;align-items:flex-start}
+.feedback.fb-show{display:flex}
+.fb-ok{background:rgba(29,185,117,.06);border:1px solid rgba(29,185,117,.2);color:#6ee7b7}
+.fb-ng{background:rgba(224,82,82,.06);border:1px solid rgba(224,82,82,.2);color:#fca5a5}
+.fb-ico{font-size:16px;flex-shrink:0;line-height:1.6}
+.fb-body strong{font-weight:800;display:block;margin-bottom:2px;font-size:12px}
+
+.qz-actions{display:flex;justify-content:flex-end;margin-top:4px}
+.btn-next{padding:11px 24px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all .18s;display:none;letter-spacing:-.2px}
+.btn-next.btn-show{display:block}
+.btn-next:hover{background:var(--accentd);transform:translateY(-1px)}
+
+/* RESULT PANEL */
+#result-panel{max-width:520px;padding:48px 24px 80px;align-items:center;text-align:center;gap:18px}
+.r-emoji{font-size:60px;animation:rBounce .5s ease}
+@keyframes rBounce{0%{transform:scale(.2);opacity:0}60%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+.r-stars{font-size:28px;letter-spacing:2px}
+.r-title{font-size:26px;font-weight:800;letter-spacing:-.8px}
+.r-fraction{font-size:52px;font-weight:800;letter-spacing:-2px;font-family:var(--mono);line-height:1}
+.r-pct-label{font-size:13px;color:var(--text2);margin-top:4px}
+.r-msg{font-size:13px;color:var(--text2);max-width:340px}
+.r-breakdown{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;justify-content:center;gap:32px}
+.rb-item{display:flex;flex-direction:column;align-items:center;gap:3px}
+.rb-val{font-size:24px;font-weight:800;font-family:var(--mono)}
+.rb-lbl{font-size:10px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono)}
+.rb-val.c-g{color:var(--green)}.rb-val.c-r{color:var(--red)}.rb-val.c-y{color:var(--yellow)}
+.r-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;width:100%}
+.btn-primary{padding:11px 22px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all .15s}
+.btn-primary:hover{background:var(--accentd)}
+.btn-ghost{padding:11px 22px;background:var(--bg2);color:var(--text);border:1px solid var(--border2);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all .15s}
+.btn-ghost:hover{background:var(--bg3)}
+.r-note{font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:-8px}
+
+
+/* SECTION COMPLETE */
+#sc-panel{max-width:560px;padding:48px 24px 80px;align-items:center;text-align:center;gap:18px}
+.sc-banner{font-size:52px}
+.sc-title{font-size:28px;font-weight:800;letter-spacing:-.8px}
+.sc-sec-name{font-size:18px;font-weight:700;color:var(--accent)}
+.sc-desc{font-size:13px;color:var(--text2);max-width:380px}
+.sc-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}
+.sc-stat{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:3px}
+.sc-stat-val{font-size:24px;font-weight:800;font-family:var(--mono);color:var(--accent)}
+.sc-stat-lbl{font-size:10px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono)}
+.sc-next-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 32px;background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;font-family:var(--font);letter-spacing:-.3px;transition:all .2s;margin-top:6px;width:100%;max-width:360px}
+.sc-next-btn:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(79,126,245,.28)}
+.sc-finish{font-size:22px;font-weight:800;color:var(--accent);margin-top:8px}
+
+@media(max-width:680px){
+  #sb{display:none}
+  .panel,.panel.show{padding:20px 14px 80px}
+  #result-panel,#sc-panel{padding:36px 14px 80px}
+  .hero-ring{display:none}
+  .hero-desc{max-width:100%}
+}
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="nav-logo" onclick="goHome()">
+    <div class="nav-logo-mark">🐍</div>
+    <div class="nav-logo-text">Py<span>Learn</span></div>
+  </div>
+  <div class="nav-right">
+    <div class="prog-badge">
+      <span>Progress</span>
+      <div class="nav-overall-bar"><div class="nav-overall-fill" id="navFill" style="width:0%"></div></div>
+      <b id="navPct">0%</b>
+    </div>
+  </div>
+</nav>
+
+<div id="app">
+  <aside id="sb">
+    <div class="sb-head">
+      <div class="sb-path">Career Path</div>
+      <div class="sb-title">Python Developer</div>
+    </div>
+    <div class="sb-prog">
+      <div class="sb-prog-label">Overall Progress</div>
+      <div class="sb-prog-bar"><div class="sb-prog-fill" id="sbFill" style="width:0%"></div></div>
+      <div class="sb-prog-stats"><span id="sbDone">0 done</span><span id="sbTotal">0 total</span></div>
+    </div>
+    <div class="sb-scroll" id="sbScroll"></div>
+  </aside>
+
+  <main id="main">
+    <div class="panel" id="home-panel"></div>
+    <div class="panel" id="quiz-panel">
+      <div class="qz-topbar">
+        <button class="qz-back" onclick="exitQuiz()">← Back</button>
+        <div class="qz-lesson-name" id="qzName">Lesson</div>
+        <div class="qz-counter" id="qzCtr">1 / 10</div>
+      </div>
+      <div class="qz-prog"><div class="qz-prog-fill" id="qzProg" style="width:0%"></div></div>
+      <div id="qArea"></div>
+      <div class="qz-actions">
+        <button class="btn-next" id="btnNext" onclick="nextQ()">Next →</button>
+      </div>
+    </div>
+    <div class="panel" id="result-panel"></div>
+    <div class="panel" id="sc-panel"></div>
+  </main>
+</div>
+
+<script>
+// ============================================================
+// CURRICULUM DATA
+// ============================================================
+var CURRICULUM = [{"id": "s1", "title": "Intro to Python", "desc": "Variables, data types, strings, and your first Python programs", "color": "#5b8dee", "lessons": [{"id": "s1l1", "title": "Creating Variables", "sub": "Assign values to names", "type": "learn", "questions": [{"q": "What is the correct syntax to create a variable?", "code": null, "opts": ["age = 25", "var age = 25", "int age = 25", "age := 25"], "ans": 0, "exp": "In Python, variables need no keyword. Just write: name = value. No var, no type declaration."}, {"q": "After this code runs, what is stored in x?", "code": "x = 10\nx = 20", "opts": ["10", "20", "Both 10 and 20", "Error"], "ans": 1, "exp": "The second assignment overwrites the first. x becomes 20."}, {"q": "Which is a valid Python variable name?", "code": null, "opts": ["2fast", "my-speed", "my_speed", "my speed"], "ans": 2, "exp": "Names must start with a letter or underscore, contain only letters, digits, underscores. my_speed is valid."}, {"q": "What does this print?", "code": "name = 'Alice'\nprint(name)", "opts": ["\"Alice\"", "name", "Alice", "Error"], "ans": 2, "exp": "print() outputs the VALUE, not the quotes. Output: Alice"}, {"q": "What type is assigned to x?", "code": "x = 3.14", "opts": ["int", "str", "float", "bool"], "ans": 2, "exp": "Any number with a decimal point is float. 3.14 is a float."}, {"q": "Which assigns a whole number integer?", "code": null, "opts": ["score = '100'", "score = 100.0", "score = 100", "score = int"], "ans": 2, "exp": "100 is an integer. '100' is a string, 100.0 is a float."}, {"q": "What is printed?", "code": "x = 5\ny = x\nx = 10\nprint(y)", "opts": ["10", "5", "Error", "15"], "ans": 1, "exp": "y = x copies the VALUE (5). Changing x later does not affect y. Output: 5"}, {"q": "How do you assign same value to multiple variables?", "code": null, "opts": ["a = b = c = 0", "a, b, c == 0", "a = 0; b = 0; c = 0", "set(a, b, c, 0)"], "ans": 0, "exp": "Chained assignment: a = b = c = 0 assigns 0 to all three at once."}, {"q": "What does this print?", "code": "city = 'Paris'\ncountry = 'France'\nprint(city)\nprint(country)", "opts": ["Paris France", "Paris\\nFrance", "city\\ncountry", "Error"], "ans": 1, "exp": "Each print() starts on a new line. Outputs Paris then France on separate lines."}, {"q": "What is wrong with this variable name?", "code": "class = 'Math'", "opts": ["Nothing wrong", "class is a reserved keyword", "Cannot use quotes", "Cannot assign strings"], "ans": 1, "exp": "class is a Python keyword used to define classes. Using it as a variable name causes SyntaxError."}]}, {"id": "s1l2", "title": "Numbers and Math", "sub": "Arithmetic operators", "type": "learn", "questions": [{"q": "What does this output?", "code": "a = 10\nb = 3\nprint(a + b)", "opts": ["10 + 3", "a + b", "13", "103"], "ans": 2, "exp": "+ on numbers performs addition. 10 + 3 = 13."}, {"q": "What is the result?", "code": "result = 10 * 2 + 5\nprint(result)", "opts": ["30", "25", "10", "35"], "ans": 1, "exp": "Order of operations: 10 * 2 = 20 first, then 20 + 5 = 25."}, {"q": "What does ** do?", "code": "print(2 ** 8)", "opts": ["16", "256", "Multiply 2 by 8 twice", "Error"], "ans": 1, "exp": "** is exponentiation. 2 ** 8 means 2 to the power of 8 = 256."}, {"q": "What is printed?", "code": "num = 17\nprint(num % 5)", "opts": ["3", "2", "17", "3.4"], "ans": 1, "exp": "% is modulo (remainder). 17 divided by 5 = 3 remainder 2. Output: 2"}, {"q": "What does // do?", "code": "print(7 // 2)", "opts": ["3.5", "3", "4", "Error"], "ans": 1, "exp": "// is floor division. Divides and rounds DOWN. 7 / 2 = 3.5, floor = 3."}, {"q": "What is printed?", "code": "print('Ha' * 3)", "opts": ["Ha Ha Ha", "HaHaHa", "6", "Error"], "ans": 1, "exp": "Multiplying a string by int repeats it. 'Ha' * 3 = 'HaHaHa'."}, {"q": "What is the output?", "code": "a = 5\na += 3\nprint(a)", "opts": ["5", "3", "8", "Error"], "ans": 2, "exp": "a += 3 means a = a + 3. So 5 + 3 = 8. Output: 8"}, {"q": "What does this print?", "code": "total = 100\ntax = 15\nprint('Total:', total + tax)", "opts": ["Total: final", "Total: 115", "Total:115", "115"], "ans": 1, "exp": "print() with comma-separated args adds space between. total + tax = 115. Output: Total: 115"}, {"q": "What is the result of 9 / 3 in Python 3?", "code": null, "opts": ["3 (integer)", "3.0 (float)", "Error", "0"], "ans": 1, "exp": "In Python 3, / always returns float even if result is whole. 9 / 3 = 3.0."}, {"q": "Which shorthand multiplies score by 2?", "code": "score = 50", "opts": ["score * 2", "score =* 2", "score *= 2", "score ** 2"], "ans": 2, "exp": "*= is the multiplication assignment operator. score *= 2 means score = score * 2."}]}, {"id": "s1l3", "title": "Booleans", "sub": "True, False, and logic", "type": "learn", "questions": [{"q": "What type are True and False?", "code": null, "opts": ["string", "int", "bool", "none"], "ans": 2, "exp": "True and False are Python's boolean type. Must be capitalized: True, False."}, {"q": "What does this print?", "code": "print(5 > 3)", "opts": ["True", "False", "5 > 3", "Error"], "ans": 0, "exp": "5 is greater than 3. The comparison returns the boolean True."}, {"q": "What does and return?", "code": "result = True and False\nprint(result)", "opts": ["True", "False", "None", "Error"], "ans": 1, "exp": "and returns True only if BOTH sides are True. True and False = False."}, {"q": "What does not True evaluate to?", "code": null, "opts": ["True", "False", "None", "0"], "ans": 1, "exp": "not flips the boolean. not True = False."}, {"q": "Which comparison returns True?", "code": null, "opts": ["10 == 11", "5 > 10", "7 != 7", "3 < 8"], "ans": 3, "exp": "3 < 8 is True. The others: 10 != 11 (False), 5 not > 10 (False), 7 equals 7 so != is False."}, {"q": "What does or return?", "code": "print(False or True)", "opts": ["False", "True", "Error", "None"], "ans": 1, "exp": "or returns True if AT LEAST ONE side is True. False or True = True."}, {"q": "What is bool(0)?", "code": null, "opts": ["0", "True", "False", "None"], "ans": 2, "exp": "0 is falsy in Python. bool(0) converts to False. Any non-zero number is True."}, {"q": "What does this print?", "code": "x = 0\nif x:\n    print('Yes')\nelse:\n    print('No')", "opts": ["Yes", "No", "0", "Error"], "ans": 1, "exp": "0 is falsy. if x: is False. else block runs. Output: No"}, {"q": "Which value is truthy?", "code": null, "opts": ["0", "'' (empty string)", "[] (empty list)", "42"], "ans": 3, "exp": "42 is non-zero so it is truthy. 0, empty strings, empty lists are all falsy."}, {"q": "What does not (5 > 3) evaluate to?", "code": null, "opts": ["True", "False", "Error", "5 > 3"], "ans": 1, "exp": "5 > 3 = True. not True = False."}]}, {"id": "s1l4", "title": "Strings", "sub": "Text manipulation and methods", "type": "learn", "questions": [{"q": "What is the output of this f-string?", "code": "name = 'Bob'\nprint(f'Hello, {name}!')", "opts": ["Hello, {name}!", "Hello, Bob!", "f'Hello, Bob!'", "Error"], "ans": 1, "exp": "f-strings replace {variable} with its value. Output: Hello, Bob!"}, {"q": "What does .upper() do?", "code": "print('hello'.upper())", "opts": ["Converts to uppercase", "Removes spaces", "Reverses string", "Error"], "ans": 0, "exp": ".upper() converts all characters to uppercase. Output: HELLO"}, {"q": "What does .lower() return?", "code": "text = 'PYTHON'\nprint(text.lower())", "opts": ["PYTHON", "python", "Python", "Error"], "ans": 1, "exp": ".lower() converts to lowercase. Output: python"}, {"q": "How do you find string length?", "code": "s = 'Hello'\nprint(len(s))", "opts": ["5", "6", "len", "Error"], "ans": 0, "exp": "len() returns character count. 'Hello' has 5 characters."}, {"q": "What does .strip() do?", "code": "print('   Python   '.strip())", "opts": ["   Python   ", "Python", "python", "Error"], "ans": 1, "exp": ".strip() removes leading and trailing whitespace. Output: Python"}, {"q": "What does .replace() do?", "code": "s = 'I love cats'\nprint(s.replace('cats', 'dogs'))", "opts": ["I love cats", "I love dogs", "cats", "Error"], "ans": 1, "exp": ".replace(old, new) replaces occurrences. Output: I love dogs"}, {"q": "What does this f-string produce?", "code": "a = 3\nb = 4\nprint(f'Sum: {a+b}')", "opts": ["Sum: a+b", "Sum: 3+4", "Sum: 7", "Error"], "ans": 2, "exp": "f-strings evaluate expressions inside {}. a+b = 7. Output: Sum: 7"}, {"q": "What does .split() return?", "code": "words = 'one two three'.split()\nprint(words)", "opts": ["'one two three'", "['one', 'two', 'three']", "one,two,three", "Error"], "ans": 1, "exp": ".split() splits by whitespace, returns list of words."}, {"q": "What does .startswith() check?", "code": "print('Python'.startswith('Py'))", "opts": ["True", "False", "Py", "Error"], "ans": 0, "exp": ".startswith(prefix) returns True if string begins with that prefix. 'Python' starts with 'Py'."}, {"q": "What does string concatenation with + do?", "code": "x = 'Hello'\ny = ' World'\nprint(x + y)", "opts": ["Hello World", "HelloWorld", "Hello + World", "Error"], "ans": 0, "exp": "+ joins strings. 'Hello' + ' World' = 'Hello World'. Note the space in ' World'."}]}, {"id": "s1l5", "title": "Input Function", "sub": "Getting user input", "type": "learn", "questions": [{"q": "What does input() always return?", "code": null, "opts": ["int", "float", "str", "The type the user types"], "ans": 2, "exp": "input() ALWAYS returns a string, regardless of what the user types."}, {"q": "How do you read an integer from user?", "code": null, "opts": ["n = int_input('Enter: ')", "n = int(input('Enter: '))", "n = input(int, 'Enter: ')", "n = input('Enter: ').int()"], "ans": 1, "exp": "Wrap input() with int() to convert: int(input('Enter: ')). Standard Python pattern."}, {"q": "What prints if user types 5?", "code": "x = input('Number: ')\nprint(x * 3)", "opts": ["15", "555", "Error", "53"], "ans": 1, "exp": "x is STRING '5'. String * 3 repeats: '5' * 3 = '555'. Use int(input()) to get 15."}, {"q": "What happens if user types abc for int(input())?", "code": null, "opts": ["Returns 0", "Returns None", "ValueError is raised", "Returns 'abc'"], "ans": 2, "exp": "int('abc') raises ValueError because 'abc' cannot convert to integer."}, {"q": "What does this print if user enters Alice?", "code": "name = input('Name: ')\nprint('Hello, ' + name.upper() + '!')", "opts": ["Hello, Alice!", "Hello, ALICE!", "Hello, name!", "Error"], "ans": 1, "exp": ".upper() converts to uppercase. 'Alice' becomes 'ALICE'. Output: Hello, ALICE!"}, {"q": "How do you read a float from user?", "code": null, "opts": ["float(input('Enter: '))", "input(float, 'Enter: ')", "flt(input('Enter: '))", "input('Enter: ').float()"], "ans": 0, "exp": "Wrap input() with float(): float(input('Enter: '))"}, {"q": "What is output if user enters 10?", "code": "n = int(input('Enter: '))\nprint(n ** 2)", "opts": ["20", "10", "100", "Error"], "ans": 2, "exp": "int('10') = 10. 10 ** 2 = 100. Output: 100"}, {"q": "Which code checks if user typed yes?", "code": "answer = input('Continue? ')", "opts": ["if answer = 'yes':", "if answer == 'yes':", "if answer is 'yes':", "if answer === 'yes':"], "ans": 1, "exp": "Use == for comparison. = is assignment. is checks identity. === does not exist in Python."}, {"q": "What does the prompt argument to input() do?", "code": "name = input('What is your name? ')", "opts": ["Returns the prompt text", "Displays text to user before they type", "Creates a variable called prompt", "Does nothing"], "ans": 1, "exp": "The string argument is displayed as the prompt asking the user what to type."}, {"q": "What is printed if user enters 2000?", "code": "year = int(input('Birth year: '))\nprint(2024 - year)", "opts": ["2000", "2024", "24", "Error"], "ans": 2, "exp": "2024 - 2000 = 24. Output: 24"}]}, {"id": "s1l6", "title": "Comparisons", "sub": "Equality and relational operators", "type": "learn", "questions": [{"q": "What operator checks equality?", "code": null, "opts": ["=", "==", "!=", "==="], "ans": 1, "exp": "== is equality operator. Single = is assignment. != is not-equal. === does not exist in Python."}, {"q": "What does this print?", "code": "x = 5\nprint(x == 5)", "opts": ["True", "False", "5", "Error"], "ans": 0, "exp": "x holds 5, 5 == 5 is True."}, {"q": "What is the result?", "code": "a = 10\nb = 10.0\nprint(a == b)", "opts": ["True", "False", "Error", "TypeError"], "ans": 0, "exp": "Integer 10 and float 10.0 are numerically equal. a == b is True."}, {"q": "What does >= mean?", "code": null, "opts": ["Greater than only", "Less than or equal", "Greater than or equal", "Not equal"], "ans": 2, "exp": ">= means greater than OR equal to."}, {"q": "What is printed?", "code": "score = 75\nprint(score >= 70)", "opts": ["True", "False", "75", "70"], "ans": 0, "exp": "75 >= 70 is True."}, {"q": "What does != print?", "code": "print(7 != 7)", "opts": ["True", "False", "Error", "None"], "ans": 1, "exp": "7 != 7 is False because 7 equals 7."}, {"q": "What is the output?", "code": "n = 15\nprint(n % 2 == 0)", "opts": ["True", "False", "1", "0"], "ans": 1, "exp": "15 % 2 = 1. 1 == 0 is False. This pattern checks if a number is even."}, {"q": "How do you check if x is between 1 and 10?", "code": null, "opts": ["x >= 1 and x <= 10", "x >= 1 or x <= 10", "1 < x < 10", "1 <= x or x <= 10"], "ans": 0, "exp": "x >= 1 and x <= 10 checks both conditions. Python also allows: 1 <= x <= 10."}, {"q": "What does this print?", "code": "a = 5\nb = '5'\nprint(a == b)", "opts": ["True", "False", "Error", "5"], "ans": 1, "exp": "Integer 5 and string '5' are different types. 5 == '5' is False."}, {"q": "What is printed?", "code": "x = 100\nprint(x <= 99)", "opts": ["True", "False", "100", "Error"], "ans": 1, "exp": "100 is not <= 99. 100 > 99. So result is False."}]}, {"id": "s1l7", "title": "Basics Review", "sub": "Practice all fundamentals", "type": "practice", "questions": [{"q": "What does this output?", "code": "x = 5\ny = 3\nresult = x * y - 2\nprint(f'Result: {result}')", "opts": ["Result: 13", "Result: 15", "Result: result", "Result: x*y-2"], "ans": 0, "exp": "5 * 3 = 15, then 15 - 2 = 13. f-string substitutes value. Output: Result: 13"}, {"q": "Which code swaps two variables correctly?", "code": "a = 1\nb = 2", "opts": ["a = b; b = a", "a, b = b, a", "swap(a, b)", "a = 2; b = 1"], "ans": 1, "exp": "Python tuple unpacking a, b = b, a elegantly swaps two values without a temp variable."}, {"q": "What is the output?", "code": "text = 'python'\nprint(text.capitalize())", "opts": ["PYTHON", "python", "Python", "Error"], "ans": 2, "exp": ".capitalize() makes first character uppercase and rest lowercase. Output: Python"}, {"q": "What does 2 ** 10 equal?", "code": null, "opts": ["20", "1024", "210", "Error"], "ans": 1, "exp": "2 ** 10 = 2 to the power of 10 = 1024."}, {"q": "Which expression evaluates to True?", "code": null, "opts": ["5 == '5'", "True and False", "not False", "0 > 1"], "ans": 2, "exp": "not False flips False to True. The others all evaluate to False."}, {"q": "What is printed?", "code": "score = 85\npassing = score >= 60\nprint(f'Passed: {passing}')", "opts": ["Passed: True", "Passed: passing", "Passed: 85", "Passed: 60"], "ans": 0, "exp": "85 >= 60 is True. f-string inserts True. Output: Passed: True"}, {"q": "What does this output?", "code": "a = 10\na += 5\na *= 2\nprint(a)", "opts": ["15", "30", "25", "10"], "ans": 1, "exp": "a=10, += 5 gives 15, *= 2 gives 30. Output: 30"}, {"q": "What is the type of 3 / 2 in Python 3?", "code": null, "opts": ["int (1)", "float (1.5)", "str", "error"], "ans": 1, "exp": "In Python 3, / always returns float. 3 / 2 = 1.5."}, {"q": "What will len('Hello, World!') return?", "code": null, "opts": ["12", "13", "11", "14"], "ans": 1, "exp": "Count all characters including comma, space, exclamation = 13 total."}, {"q": "What is wrong?", "code": "Print('Hello')", "opts": ["Nothing wrong", "Python uses print() not Print()", "Missing semicolon", "Wrong quotes"], "ans": 1, "exp": "Python is case-sensitive. Built-in is print() lowercase. Print() causes NameError."}]}, {"id": "s1l8", "title": "Bot Project", "sub": "Build a chatbot with input", "type": "project", "questions": [{"q": "Which code asks the user for their name?", "code": null, "opts": ["name = input('What is your name? ')", "name = ask('What is your name?')", "input name = 'What is your name?'", "read(name)"], "ans": 0, "exp": "input() reads user input. The string argument is the prompt shown to the user."}, {"q": "What type does input() always return?", "code": null, "opts": ["int", "float", "str", "bool"], "ans": 2, "exp": "input() ALWAYS returns a string, even if user types a number."}, {"q": "How do you convert age input to integer?", "code": "age = input('Your age: ')", "opts": ["age = int(input('Your age: '))", "age = integer(age)", "int age = input('Your age: ')", "age.toInt()"], "ans": 0, "exp": "Wrap input() with int() to convert directly. Standard Python pattern."}, {"q": "What will print if user types Alice?", "code": "name = input('Name: ')\nprint('Welcome, ' + name + '!')", "opts": ["Welcome, Alice!", "Welcome, name!", "Welcome, Alice", "Error"], "ans": 0, "exp": "String concatenation joins the parts. Output: Welcome, Alice!"}, {"q": "What happens if you add string and int directly?", "code": "name = 'Bob'\nage = 25\nprint(name + age)", "opts": ["Bob25", "TypeError: cannot concatenate str and int", "Bob 25", "25Bob"], "ans": 1, "exp": "Python cannot concatenate str and int. Fix: use f-string or str(age)."}, {"q": "What prints if user enters 2000?", "code": "year = int(input('Birth year: '))\nage = 2024 - year\nprint(f'You are {age} years old!')", "opts": ["You are 2000 years old!", "You are 2024 years old!", "You are 24 years old!", "Error"], "ans": 2, "exp": "2024 - 2000 = 24. f-string inserts 24. Output: You are 24 years old!"}, {"q": "How do you make a bot reverse the user's name?", "code": "name = input('Name: ')", "opts": ["print(name.reverse())", "print(reversed(name))", "print(name[::-1])", "print(name.flip())"], "ans": 2, "exp": "String slicing [::-1] reverses a string. No .reverse() method exists for strings."}, {"q": "What outputs if user types Hello?", "code": "msg = input('Message: ')\nprint(msg.upper()[::-1])", "opts": ["HELLO", "OLLEH", "hello", "Error"], "ans": 1, "exp": ".upper() gives HELLO. [::-1] reverses to OLLEH. Operations chain left to right."}, {"q": "How do you print character count of user's name?", "code": "name = input('Name: ')", "opts": ["print(name.count())", "print(len(name))", "print(size(name))", "print(name.length)"], "ans": 1, "exp": "len() returns the number of characters in a string."}, {"q": "What does this bot check?", "code": "age = int(input('Age: '))\nif age >= 18:\n    print('Adult')\nelse:\n    print('Minor')", "opts": ["If age equals 18", "If age is 18 or older", "If age is less than 18", "Nothing"], "ans": 1, "exp": "age >= 18 checks if 18 or older. Prints Adult if True, Minor if False."}]}]}, {"id": "s2", "title": "Flow Control", "desc": "Conditionals and loops to build programs that make decisions", "color": "#a855f7", "lessons": [{"id": "s2l1", "title": "If Statements", "sub": "Making decisions in code", "type": "learn", "questions": [{"q": "What does an if statement do?", "code": null, "opts": ["Always runs code inside", "Runs code only when condition is True", "Creates a loop", "Defines a function"], "ans": 1, "exp": "if checks a condition. If True, the indented block runs. If False, it is skipped."}, {"q": "What is printed?", "code": "x = 10\nif x > 5:\n    print('Big')\nprint('Done')", "opts": ["Big\\nDone", "Done", "Big", "Nothing"], "ans": 0, "exp": "x=10 > 5 is True so 'Big' prints. 'Done' always prints (outside the if). Output: Big then Done"}, {"q": "What is the output?", "code": "age = 16\nif age >= 18:\n    print('Adult')\nprint('End')", "opts": ["Adult\\nEnd", "End", "Adult", "Nothing"], "ans": 1, "exp": "16 >= 18 is False, 'Adult' is skipped. 'End' always prints. Output: End"}, {"q": "What does elif stand for?", "code": null, "opts": ["else if", "end if", "error if", "else input"], "ans": 0, "exp": "elif is shorthand for else if. Checks another condition when the first one is False."}, {"q": "What is printed?", "code": "score = 75\nif score >= 90:\n    print('A')\nelif score >= 70:\n    print('B')\nelse:\n    print('C')", "opts": ["A", "B", "C", "B\\nC"], "ans": 1, "exp": "75 >= 90? No. 75 >= 70? Yes. Print 'B' and stop. Output: B"}, {"q": "What does the else block do?", "code": null, "opts": ["Always runs", "Runs when all conditions are False", "Runs before the if", "Runs in a loop"], "ans": 1, "exp": "else is the catch-all. Runs only when no if or elif condition was True."}, {"q": "What is printed?", "code": "n = 0\nif n:\n    print('Truthy')\nelse:\n    print('Falsy')", "opts": ["Truthy", "Falsy", "0", "Error"], "ans": 1, "exp": "0 is falsy in Python. if n: is False. else runs. Output: Falsy"}, {"q": "What is the output?", "code": "x = 5\nif x > 10:\n    print('High')\nelif x > 3:\n    print('Medium')\nelif x > 1:\n    print('Low')", "opts": ["High", "Medium", "Medium\\nLow", "Low"], "ans": 1, "exp": "x=5. 5 > 10? No. 5 > 3? Yes! Print 'Medium' and STOP. Remaining elifs skipped."}, {"q": "Can you have multiple elif blocks?", "code": null, "opts": ["No, only one elif", "Yes, unlimited elif blocks", "Max 3 elifs", "Only with else at end"], "ans": 1, "exp": "Python allows unlimited elif blocks after the initial if."}, {"q": "What is the output?", "code": "temp = 30\nif temp > 25:\n    print('Hot')\nif temp > 20:\n    print('Warm')", "opts": ["Hot", "Hot\\nWarm", "Warm", "Nothing"], "ans": 1, "exp": "Both are separate if statements, both checked independently. Both True. Output: Hot then Warm"}]}, {"id": "s2l2", "title": "While Loops", "sub": "Repeat while condition is True", "type": "learn", "questions": [{"q": "What does a while loop do?", "code": null, "opts": ["Runs once only", "Runs fixed number of times", "Repeats while condition is True", "Iterates over a list"], "ans": 2, "exp": "A while loop repeats its code block as long as the condition stays True."}, {"q": "What is the output?", "code": "i = 0\nwhile i < 3:\n    print(i)\n    i += 1", "opts": ["0 1 2 3", "0\\n1\\n2", "1\\n2\\n3", "Infinite loop"], "ans": 1, "exp": "i starts 0. Prints 0, i becomes 1. Prints 1, i becomes 2. Prints 2, i becomes 3. 3 < 3 False, stops."}, {"q": "What happens if condition never becomes False?", "code": null, "opts": ["Loop runs 1000 times", "Program crashes", "Infinite loop - program hangs", "Auto-breaks after 60s"], "ans": 2, "exp": "An always-True while condition creates an infinite loop. Program hangs indefinitely."}, {"q": "What does break do?", "code": null, "opts": ["Pauses the loop", "Skips one iteration", "Immediately exits the loop", "Restarts the loop"], "ans": 2, "exp": "break immediately exits the loop, continuing with code after the loop."}, {"q": "What is the output?", "code": "i = 0\nwhile True:\n    if i == 3:\n        break\n    print(i)\n    i += 1", "opts": ["0\\n1\\n2", "0\\n1\\n2\\n3", "Infinite loop", "Error"], "ans": 0, "exp": "break exits when i == 3. Prints 0, 1, 2 before reaching 3. Output: 0 1 2"}, {"q": "What does continue do?", "code": null, "opts": ["Breaks the loop", "Skips rest of current iteration and goes to next", "Repeats current iteration", "Does nothing"], "ans": 1, "exp": "continue skips remaining code in current iteration, jumps back to condition check."}, {"q": "What is printed?", "code": "i = 0\nwhile i < 5:\n    i += 1\n    if i % 2 == 0:\n        continue\n    print(i)", "opts": ["1 2 3 4 5", "1\\n3\\n5", "2\\n4", "0\\n2\\n4"], "ans": 1, "exp": "Even numbers (i%2==0) get continue, skipping print. Only odd 1, 3, 5 print."}, {"q": "What is the output?", "code": "count = 10\nwhile count > 0:\n    count -= 3\nprint(count)", "opts": ["0", "-2", "1", "3"], "ans": 1, "exp": "10 -> 7 -> 4 -> 1 -> -2. At -2, -2 > 0 is False. Print -2. Output: -2"}, {"q": "What is the output?", "code": "x = 1\nwhile x < 100:\n    x *= 2\nprint(x)", "opts": ["64", "128", "100", "256"], "ans": 1, "exp": "Powers of 2: 1,2,4,8,16,32,64,128. 64 < 100 multiplies to 128. 128 < 100 False. Print 128."}, {"q": "What is a common use for while loops?", "code": null, "opts": ["Iterating known-length lists", "Asking input until valid response", "Running code exactly 5 times", "Sorting data"], "ans": 1, "exp": "While loops shine when you do not know iterations needed, like validating user input."}]}, {"id": "s2l3", "title": "For Loops", "sub": "Iterate over sequences", "type": "learn", "questions": [{"q": "What does a for loop iterate over?", "code": null, "opts": ["Only numbers", "Conditions", "Sequences: lists, strings, ranges", "Only while True"], "ans": 2, "exp": "for loops iterate over any iterable: lists, strings, ranges, tuples, etc."}, {"q": "What is the output?", "code": "for i in range(4):\n    print(i)", "opts": ["1 2 3 4", "0\\n1\\n2\\n3", "0 1 2 3 4", "0\\n1\\n2\\n3\\n4"], "ans": 1, "exp": "range(4) generates 0, 1, 2, 3. NOT including 4. Each printed on new line."}, {"q": "What does range(2, 7) generate?", "code": null, "opts": ["2 3 4 5 6 7", "2 3 4 5 6", "1 2 3 4 5 6 7", "2 to 7 inclusive"], "ans": 1, "exp": "range(start, stop) generates from start up to NOT including stop. range(2,7) = 2,3,4,5,6."}, {"q": "What does range(0, 10, 2) generate?", "code": null, "opts": ["0 2 4 6 8 10", "0 2 4 6 8", "0 to 10 by 2", "0 5 10"], "ans": 1, "exp": "range(start, stop, step) with step=2 counts by twos: 0,2,4,6,8. Stops before 10."}, {"q": "What is the output?", "code": "total = 0\nfor n in range(1, 6):\n    total += n\nprint(total)", "opts": ["6", "15", "10", "21"], "ans": 1, "exp": "Sum of 1+2+3+4+5 = 15. Loop accumulates each number. Output: 15"}, {"q": "What does this print?", "code": "for char in 'Hi!':\n    print(char)", "opts": ["Hi!", "H\\ni\\n!", "H i !", "Error"], "ans": 1, "exp": "Strings are iterable. Loops over each character. Prints H, i, ! each on new line."}, {"q": "How do you loop backwards from 5 to 1?", "code": null, "opts": ["range(5, 0)", "range(5, 0, -1)", "range(1, 5, -1)", "reverse(range(5))"], "ans": 1, "exp": "range(5, 0, -1) counts down from 5, stopping before 0: 5, 4, 3, 2, 1."}, {"q": "What does enumerate() provide?", "code": "for i, v in enumerate([10, 20, 30]):\n    print(i, v)", "opts": ["0 10\\n1 20\\n2 30", "10 20 30", "0 1 2", "Error"], "ans": 0, "exp": "enumerate() gives both index and value. Outputs: 0 10, then 1 20, then 2 30."}, {"q": "What is the output?", "code": "result = 1\nfor i in range(1, 5):\n    result *= i\nprint(result)", "opts": ["10", "24", "120", "4"], "ans": 1, "exp": "Computes 1*1*2*3*4 = 24. Range(1,5) gives 1,2,3,4. Output: 24"}, {"q": "What does this print?", "code": "fruits = ['apple', 'banana', 'cherry']\nfor f in fruits:\n    print(f)", "opts": ["apple banana cherry", "apple\\nbanana\\ncherry", "[apple, banana]", "Error"], "ans": 1, "exp": "Loops over each list item. Each printed on its own line."}]}, {"id": "s2l4", "title": "Nested Logic", "sub": "if inside if, loops inside loops", "type": "learn", "questions": [{"q": "What does this print?", "code": "x = 15\nif x > 10:\n    if x > 20:\n        print('Very high')\n    else:\n        print('Medium high')\nelse:\n    print('Low')", "opts": ["Very high", "Medium high", "Low", "Nothing"], "ans": 1, "exp": "x=15 > 10: True. Then 15 > 20: False, inner else. Output: Medium high"}, {"q": "What is the output?", "code": "age = 25\nhas_id = True\nif age >= 18:\n    if has_id:\n        print('Entry allowed')\n    else:\n        print('Need ID')\nelse:\n    print('Too young')", "opts": ["Entry allowed", "Need ID", "Too young", "Nothing"], "ans": 0, "exp": "Both conditions True. Output: Entry allowed"}, {"q": "What does this print?", "code": "x = -3\nif x > 0:\n    print('Positive')\nelif x < 0:\n    if x > -5:\n        print('Small neg')\n    else:\n        print('Very neg')", "opts": ["Positive", "Small neg", "Very neg", "Nothing"], "ans": 1, "exp": "x=-3 < 0 True. Then -3 > -5 True. Output: Small neg"}, {"q": "What is a nested loop?", "code": null, "opts": ["Two loops side by side", "A loop inside another loop", "A loop with break", "A while inside if"], "ans": 1, "exp": "Nested loops are loops placed inside other loops. Each outer iteration runs the full inner loop."}, {"q": "What does this print?", "code": "for i in range(3):\n    for j in range(2):\n        print(i, j)", "opts": ["3 lines", "6 lines of pairs", "2 lines", "Error"], "ans": 1, "exp": "Outer: 3 iterations. Inner: 2 each. Total: 6 lines of pairs (0,0),(0,1),(1,0),(1,1),(2,0),(2,1)."}, {"q": "How many times does hello print?", "code": "for i in range(3):\n    for j in range(4):\n        print('hello')", "opts": ["3", "4", "7", "12"], "ans": 3, "exp": "Outer 3 * Inner 4 = 12 total iterations. 'hello' prints 12 times."}, {"q": "What does this print?", "code": "x = 7\nif x % 2 == 0:\n    print('Even')\nelse:\n    if x > 5:\n        print('Odd big')\n    else:\n        print('Odd small')", "opts": ["Even", "Odd big", "Odd small", "Nothing"], "ans": 1, "exp": "7 % 2 = 1 != 0: not even. Else: 7 > 5 True. Output: Odd big"}, {"q": "What is a common alternative to deep nesting?", "code": null, "opts": ["More elif chains", "Using and to combine conditions", "Using functions", "Using loops"], "ans": 1, "exp": "Combining conditions with and: if cond1 and cond2 flattens nested ifs into one readable line."}, {"q": "What does this print?", "code": "for i in range(1, 4):\n    for j in range(1, 4):\n        print(i * j, end=' ')\n    print()", "opts": ["1 4 9", "1 2 3 2 4 6 3 6 9", "Error", "1 2 3\\n2 4 6\\n3 6 9"], "ans": 3, "exp": "Nested loops create multiplication table. end=' ' keeps on same line. print() adds newline. Rows: 1 2 3, 2 4 6, 3 6 9"}, {"q": "What does this count?", "code": "count = 0\nfor i in range(10):\n    for j in range(10):\n        if i == j:\n            count += 1\nprint(count)", "opts": ["0", "10", "100", "90"], "ans": 1, "exp": "Counts where i == j (diagonal). i and j both go 0-9, so 10 matches. Output: 10"}]}, {"id": "s2l5", "title": "Loop Control", "sub": "break, continue, pass", "type": "learn", "questions": [{"q": "What does break do in a loop?", "code": null, "opts": ["Pauses temporarily", "Exits the loop immediately", "Skips one iteration", "Restarts from beginning"], "ans": 1, "exp": "break immediately exits the loop. Execution continues after the loop block."}, {"q": "What does continue do?", "code": null, "opts": ["Exits the loop", "Skips rest of current iteration", "Pauses the loop", "Goes back to start"], "ans": 1, "exp": "continue skips remaining code in current iteration and proceeds to next iteration."}, {"q": "What is the output?", "code": "for i in range(5):\n    if i == 3:\n        break\n    print(i)", "opts": ["0\\n1\\n2\\n3", "0\\n1\\n2", "1\\n2\\n3", "0\\n1\\n2\\n4"], "ans": 1, "exp": "When i=3, break exits before printing 3. Only 0, 1, 2 are printed."}, {"q": "What does for-else do?", "code": "for i in range(3):\n    pass\nelse:\n    print('Done')", "opts": ["Error", "Prints Done", "Never prints Done", "Prints Done 3 times"], "ans": 1, "exp": "The else on a for loop runs when loop completes WITHOUT a break. Prints Done here."}, {"q": "What is printed?", "code": "for i in range(1, 6):\n    if i % 2 == 0:\n        continue\n    print(i)", "opts": ["1 2 3 4 5", "1\\n3\\n5", "2\\n4", "1\\n3\\n4\\n5"], "ans": 1, "exp": "continue skips even numbers. Only odd 1, 3, 5 are printed."}, {"q": "When does the else clause on while NOT run?", "code": "while condition:\n    if found: break\nelse: ...", "opts": ["When condition becomes False", "When break executes", "When continue runs", "Never"], "ans": 1, "exp": "The while else runs when condition naturally becomes False. If break exits, else is SKIPPED."}, {"q": "What is the output?", "code": "for i in range(10):\n    if i % 7 == 0 and i != 0:\n        break\nprint(i)", "opts": ["0", "7", "10", "6"], "ans": 1, "exp": "Loops 0,1,2,3,4,5,6,7. At i=7: 7%7==0 and i!=0 True. break. print(i) = 7."}, {"q": "What does pass do?", "code": null, "opts": ["Exits the loop", "Does nothing - it is a placeholder", "Continues to next iteration", "Breaks the loop"], "ans": 1, "exp": "pass is a no-operation placeholder. Used when syntax needs a statement but nothing should happen."}, {"q": "What is the output?", "code": "i = 0\nwhile i < 10:\n    i += 1\n    if i % 3 != 0:\n        continue\n    print(i)", "opts": ["3\\n6\\n9", "1\\n2\\n4\\n5\\n7\\n8", "3 6 9", "1 to 10"], "ans": 0, "exp": "Prints only when i divisible by 3: 3, 6, 9. continue skips non-multiples."}, {"q": "What does this count?", "code": "count = 0\nfor i in range(100):\n    if i % 7 == 0:\n        count += 1\nprint(count)", "opts": ["14", "15", "13", "7"], "ans": 1, "exp": "Multiples of 7 from 0 to 99: 0,7,14,...,98. That is 15 numbers."}]}, {"id": "s2l6", "title": "Guesser Game", "sub": "Build a number guessing game", "type": "project", "questions": [{"q": "Which module generates random numbers?", "code": null, "opts": ["math", "random", "numbers", "rand"], "ans": 1, "exp": "import random gives random functions. random.randint(1,100) gives random int 1-100 inclusive."}, {"q": "What does random.randint(1, 10) return?", "code": null, "opts": ["Float 1-10", "Integer 1-9", "Integer 1-10 inclusive", "Always 5"], "ans": 2, "exp": "randint(a,b) returns integer where a <= result <= b. Both ends are inclusive."}, {"q": "How do you check if guess is too low?", "code": "secret = 42\nguess = int(input('Guess: '))", "opts": ["if guess < secret: print('Too low!')", "if guess > secret: print('Too low!')", "if guess = secret: print('Too low!')", "if guess != secret: print('Too low!')"], "ans": 0, "exp": "If guess is less than secret, it is too low. guess < secret identifies this."}, {"q": "What is the best loop for a guessing game?", "code": null, "opts": ["for loop with range(10)", "while True with break when correct", "while guess != secret", "for each attempt"], "ans": 1, "exp": "while True: with break when player wins is flexible and handles any number of guesses."}, {"q": "What does this snippet do?", "code": "while guess != secret:\n    guess = int(input('Try again: '))\n    attempts += 1\nprint(f'Got it in {attempts} tries!')", "opts": ["Loops exactly 10 times", "Loops until guess equals secret", "Always loops forever", "Runs once only"], "ans": 1, "exp": "while loop continues as long as guess does not equal secret. Counts attempts."}, {"q": "How do you limit to 7 tries?", "code": null, "opts": ["while attempts < 7:", "for attempt in range(1, 8):", "if attempts == 7: stop()", "limit = 7"], "ans": 1, "exp": "for attempt in range(1, 8): gives exactly 7 iterations."}, {"q": "How do you give hints?", "code": null, "opts": ["Only tell if correct", "Use if/elif to print Higher or Lower", "Tell them the secret number", "Random hints"], "ans": 1, "exp": "Good UX: if guess < secret: print('Higher!') and elif guess > secret: print('Lower!')"}, {"q": "What does for-else give you in this game?", "code": "for attempt in range(7):\n    if guess == secret: break\nelse:\n    print('Out of tries!')", "opts": ["else always runs", "else runs only if break was NOT called", "else runs when break was called", "Error"], "ans": 1, "exp": "else on for loop runs only if loop completed without break. Perfect for out-of-tries."}, {"q": "How do you handle invalid (non-number) input?", "code": null, "opts": ["Use try/except ValueError", "Check if input > 0", "Input only accepts numbers", "Use while loops only"], "ans": 0, "exp": "try/except ValueError catches errors when user types non-numeric input like 'abc'."}, {"q": "What makes a guessing game good UX?", "code": null, "opts": ["Long complex code", "Clear feedback, limited tries, difficulty levels", "Complex algorithms", "No user input"], "ans": 1, "exp": "Great game: immediate feedback (higher/lower), challenge (limited tries), shows attempt count."}]}, {"id": "s2l7", "title": "Flow Control Review", "sub": "Advanced challenge problems", "type": "practice", "questions": [{"q": "What does this algorithm compute?", "code": "def mystery(n):\n    result = 0\n    while n > 0:\n        result += n % 10\n        n //= 10\n    return result\nprint(mystery(1234))", "opts": ["1234", "10", "4", "24"], "ans": 1, "exp": "Sums the digits: 4+3+2+1 = 10. Each iteration extracts last digit (n%10) and removes it (n//=10)."}, {"q": "What is the output?", "code": "for i in range(1, 6):\n    print(i * i, end=' ')", "opts": ["1 4 9 16 25 ", "1 2 3 4 5", "2 4 6 8 10", "Error"], "ans": 0, "exp": "i*i for i in 1,2,3,4,5: prints 1 4 9 16 25 with spaces."}, {"q": "How many times does hello print?", "code": "for i in range(3):\n    for j in range(2):\n        print('hello')", "opts": ["3", "2", "5", "6"], "ans": 3, "exp": "Outer 3 * Inner 2 = 6 total times."}, {"q": "What does this find?", "code": "numbers = [4,7,2,9,1,5]\nbiggest = numbers[0]\nfor n in numbers:\n    if n > biggest:\n        biggest = n\nprint(biggest)", "opts": ["4", "9", "7", "1"], "ans": 1, "exp": "Manually finds maximum. 4->7->9. Output: 9"}, {"q": "What is printed?", "code": "n = 5\nfact = 1\nwhile n > 0:\n    fact *= n\n    n -= 1\nprint(fact)", "opts": ["5", "120", "25", "0"], "ans": 1, "exp": "5 factorial: 5*4*3*2*1 = 120. Output: 120"}, {"q": "What does this pattern print?", "code": "for i in range(1, 5):\n    print('*' * i)", "opts": ["* ** *** ****", "*\\n**\\n***\\n****", "****", "*"], "ans": 1, "exp": "i=1: *, i=2: **, i=3: ***, i=4: ****. Each on new line. Triangle pattern."}, {"q": "What is the output?", "code": "x = 10\nresult = 'big' if x > 5 else 'small'\nprint(result)", "opts": ["big", "small", "True", "False"], "ans": 0, "exp": "Ternary: x > 5 is True so result = 'big'. Output: big"}, {"q": "What is the sum?", "code": "total = 0\nfor i in range(1, 101):\n    total += i\nprint(total)", "opts": ["100", "5000", "5050", "10000"], "ans": 2, "exp": "Sum of 1 to 100 = n(n+1)/2 = 100*101/2 = 5050."}, {"q": "What is the last number printed?", "code": "n = 1\nwhile n < 100:\n    n *= 2\nprint(n)", "opts": ["64", "128", "100", "256"], "ans": 1, "exp": "Powers of 2: ... 64 < 100 multiply to 128. 128 < 100 False. Print 128."}, {"q": "What is printed?", "code": "primes = 0\nfor n in range(2, 20):\n    is_p = True\n    for d in range(2, n):\n        if n % d == 0:\n            is_p = False\n            break\n    if is_p:\n        primes += 1\nprint(primes)", "opts": ["6", "7", "8", "9"], "ans": 2, "exp": "Primes 2-19: 2,3,5,7,11,13,17,19. That is 8 primes. Output: 8"}]}]}, {"id": "s3", "title": "Lists", "desc": "Store collections of data and manipulate them with powerful operations", "color": "#22c55e", "lessons": [{"id": "s3l1", "title": "Creating Lists", "sub": "Store multiple values", "type": "learn", "questions": [{"q": "How do you create a list?", "code": null, "opts": ["list = (1, 2, 3)", "list = [1, 2, 3]", "list = {1, 2, 3}", "list = <1, 2, 3>"], "ans": 1, "exp": "Lists use square brackets []. Parens create tuples, curly braces create sets or dicts."}, {"q": "How do you access the first element?", "code": "nums = [10, 20, 30]", "opts": ["nums[0]", "nums[1]", "nums.first()", "nums(0)"], "ans": 0, "exp": "Zero-based indexing. First element is at index 0. nums[0] returns 10."}, {"q": "What is the output?", "code": "fruits = ['apple', 'banana', 'cherry']\nprint(fruits[1])", "opts": ["apple", "banana", "cherry", "Error"], "ans": 1, "exp": "Index 1 is the SECOND element (zero-based). fruits[1] returns 'banana'."}, {"q": "What does fruits[-1] return?", "code": "fruits = ['apple', 'banana', 'cherry']", "opts": ["apple", "banana", "cherry", "Error"], "ans": 2, "exp": "Negative indices count from END. -1 is the last element. Returns 'cherry'."}, {"q": "How do you find list length?", "code": "nums = [5, 10, 15, 20]", "opts": ["nums.size()", "nums.count()", "len(nums)", "nums.length"], "ans": 2, "exp": "len() works on lists. len([5,10,15,20]) returns 4."}, {"q": "What does nums[2:4] return?", "code": "nums = [1, 2, 3, 4, 5]\nprint(nums[2:4])", "opts": ["[3, 4]", "[2, 3, 4]", "[3, 4, 5]", "[2, 4]"], "ans": 0, "exp": "Slicing [2:4] returns from index 2 up to NOT including 4. Indices 2 and 3: [3, 4]."}, {"q": "How do you add element to end?", "code": "nums = [1, 2, 3]", "opts": ["nums.add(4)", "nums.insert(4)", "nums.append(4)", "nums + [4]"], "ans": 2, "exp": ".append(item) adds to the END of a list, modifying it in-place."}, {"q": "What does this print?", "code": "a = [1, 2, 3]\nb = a\nb.append(4)\nprint(a)", "opts": ["[1, 2, 3]", "[1, 2, 3, 4]", "[4]", "Error"], "ans": 1, "exp": "b = a does NOT copy - both reference SAME list. Modifying b also modifies a."}, {"q": "What does list repetition do?", "code": "print([0] * 5)", "opts": ["[0]", "[0, 0, 0, 0, 0]", "[5]", "Error"], "ans": 1, "exp": "List * n repeats the list. [0] * 5 creates five zeros: [0,0,0,0,0]."}, {"q": "Can a list contain another list?", "code": "nested = [[1, 2], [3, 4]]", "opts": ["No, syntax error", "Yes, called nested lists", "Python 3.9+ only", "Only same-type lists"], "ans": 1, "exp": "Lists can contain any objects including other lists. These are nested or 2D lists."}]}, {"id": "s3l2", "title": "List Methods", "sub": "Manipulate lists powerfully", "type": "learn", "questions": [{"q": "What does .remove() do?", "code": "fruits = ['apple', 'banana', 'apple']\nfruits.remove('apple')\nprint(fruits)", "opts": ["['apple', 'banana']", "['banana', 'apple']", "['banana']", "Error"], "ans": 1, "exp": ".remove(value) removes the FIRST occurrence. One 'apple' removed, leaving ['banana', 'apple']."}, {"q": "What does .pop() return?", "code": "nums = [1, 2, 3, 4]\nprint(nums.pop())", "opts": ["1", "4", "[1,2,3]", "None"], "ans": 1, "exp": ".pop() without args removes AND returns LAST element. Returns 4. List becomes [1,2,3]."}, {"q": "What does .sort() do?", "code": "nums = [3, 1, 4, 1, 5]\nnums.sort()\nprint(nums)", "opts": ["[1, 1, 3, 4, 5]", "[5, 4, 3, 1, 1]", "[3, 1, 4, 1, 5]", "Error"], "ans": 0, "exp": ".sort() sorts IN PLACE in ascending order. Output: [1, 1, 3, 4, 5]"}, {"q": "What does .sort(reverse=True) do?", "code": "nums = [3, 1, 4]\nnums.sort(reverse=True)\nprint(nums)", "opts": ["[1, 3, 4]", "[4, 3, 1]", "[3, 1, 4]", "Error"], "ans": 1, "exp": "reverse=True sorts DESCENDING. Output: [4, 3, 1]"}, {"q": "What does .count() return?", "code": "nums = [1, 2, 2, 3, 2]\nprint(nums.count(2))", "opts": ["2", "3", "1", "5"], "ans": 1, "exp": ".count(value) counts occurrences. 2 appears 3 times. Output: 3"}, {"q": "What does .index() return?", "code": "letters = ['a', 'b', 'c', 'd']\nprint(letters.index('c'))", "opts": ["2", "3", "'c'", "Error"], "ans": 0, "exp": ".index(value) returns position of first occurrence. 'c' is at index 2. Output: 2"}, {"q": "What does .reverse() do?", "code": "nums = [1, 2, 3, 4, 5]\nnums.reverse()\nprint(nums)", "opts": ["[1, 2, 3, 4, 5]", "[5, 4, 3, 2, 1]", "[5, 1, 2, 3, 4]", "Error"], "ans": 1, "exp": ".reverse() reverses IN PLACE. [1,2,3,4,5] becomes [5,4,3,2,1]."}, {"q": "What does .insert(1, 'x') do?", "code": "lst = ['a', 'b', 'c']\nlst.insert(1, 'x')\nprint(lst)", "opts": ["['x', 'a', 'b', 'c']", "['a', 'x', 'b', 'c']", "['a', 'b', 'x', 'c']", "['a', 'b', 'c', 'x']"], "ans": 1, "exp": ".insert(index, value) inserts at index, shifting others. Index 1 = second position."}, {"q": "What does .extend() do vs .append()?", "code": "a = [1, 2]\na.extend([3, 4])\nprint(a)", "opts": ["[1, 2, [3, 4]]", "[1, 2, 3, 4]", "[[1,2],[3,4]]", "Error"], "ans": 1, "exp": ".extend() adds each element individually. .append([3,4]) would add the list as one element."}, {"q": "Difference between .sort() and sorted()?", "code": null, "opts": ["No difference", ".sort() modifies in-place; sorted() returns new list", ".sort() only works on numbers", ".sorted() is faster"], "ans": 1, "exp": ".sort() modifies original list, returns None. sorted(list) returns a NEW sorted list, original unchanged."}]}, {"id": "s3l3", "title": "List Comprehensions", "sub": "Powerful one-line list creation", "type": "learn", "questions": [{"q": "What is a list comprehension?", "code": null, "opts": ["A long list of items", "A concise way to create lists in one line", "A list comment", "A sorting method"], "ans": 1, "exp": "List comprehensions create lists compactly. Syntax: [expression for item in iterable]"}, {"q": "What does this create?", "code": "squares = [x**2 for x in range(1, 6)]\nprint(squares)", "opts": ["[1, 4, 9, 16, 25]", "[1, 2, 3, 4, 5]", "[2, 4, 6, 8, 10]", "[0, 1, 4, 9, 16]"], "ans": 0, "exp": "x squared for x in 1,2,3,4,5 gives [1,4,9,16,25]."}, {"q": "What does this output?", "code": "evens = [x for x in range(10) if x % 2 == 0]\nprint(evens)", "opts": ["[1, 3, 5, 7, 9]", "[0, 2, 4, 6, 8]", "[2, 4, 6, 8]", "[0, 1, 2, 3, 4]"], "ans": 1, "exp": "Filter: keep x where x%2==0. range(10)=0-9. Even numbers: [0,2,4,6,8]."}, {"q": "What is this loop as a comprehension?", "code": "result = []\nfor word in ['hi','hello','hey']:\n    result.append(word.upper())", "opts": ["[word for word in words]", "[word.upper() for word in ['hi','hello','hey']]", "[upper(word) for word in words]", "words.upper()"], "ans": 1, "exp": "Comprehension version: [word.upper() for word in ['hi','hello','hey']]"}, {"q": "What does this produce?", "code": "data = [1,-2,3,-4,5]\npos = [x for x in data if x > 0]\nprint(pos)", "opts": ["[1, 3, 5]", "[-2, -4]", "[1,-2,3,-4,5]", "[1,2,3,4,5]"], "ans": 0, "exp": "Filter for positive (x > 0). 1, 3, 5 pass. Output: [1, 3, 5]"}, {"q": "What does this produce?", "code": "words = ['hello','world','python']\nlengths = [len(w) for w in words]\nprint(lengths)", "opts": ["[5, 5, 6]", "[hello,world,python]", "[5]", "Error"], "ans": 0, "exp": "len of each word: 5, 5, 6. Output: [5, 5, 6]"}, {"q": "What does this output?", "code": "nums = [1,2,3,4,5]\ndoubled = [x * 2 for x in nums]\nprint(doubled)", "opts": ["[1,2,3,4,5]", "[2,4,6,8,10]", "[1,4,9,16,25]", "Error"], "ans": 1, "exp": "Multiplies each by 2. Output: [2,4,6,8,10]"}, {"q": "What does this output?", "code": "result = [x for x in range(10) if x**2 > 25]\nprint(result)", "opts": ["[1,2,3,4,5]", "[6,7,8,9]", "[5,6,7,8,9]", "[36,49,64,81]"], "ans": 1, "exp": "x squared > 25 means x > 5. Values 6,7,8,9 qualify. Output: [6,7,8,9]"}, {"q": "What does nested comprehension create?", "code": "pairs = [(i,j) for i in range(3) for j in range(3)]\nprint(len(pairs))", "opts": ["3", "6", "9", "12"], "ans": 2, "exp": "All combinations of i and j (0,1,2 each): 3 * 3 = 9 pairs."}, {"q": "What is list comprehension advantage?", "code": null, "opts": ["Always faster", "More concise and readable for simple transformations", "Cannot filter items", "Only works with numbers"], "ans": 1, "exp": "Comprehensions are more concise for simple transformations and filters than equivalent loops."}]}, {"id": "s3l4", "title": "List Slicing and Searching", "sub": "Advanced list operations", "type": "learn", "questions": [{"q": "What does in check?", "code": "fruits = ['apple','banana','cherry']\nprint('banana' in fruits)", "opts": ["True", "False", "banana", "Error"], "ans": 0, "exp": "in checks if value EXISTS in list. 'banana' is in fruits so True."}, {"q": "What does + do with lists?", "code": "a = [1,2]\nb = [3,4]\nprint(a + b)", "opts": ["Error", "[1,2,3,4]", "[4,6]", "[[1,2],[3,4]]"], "ans": 1, "exp": "+ concatenates two lists creating a NEW combined list. Output: [1,2,3,4]"}, {"q": "What is nums[::2]?", "code": "nums = [1,2,3,4,5]\nprint(nums[::2])", "opts": ["[1,3,5]", "[2,4]", "[1,2,3,4,5]", "[5,3,1]"], "ans": 0, "exp": "[::2] = every 2nd element. Indices 0,2,4 give values 1,3,5."}, {"q": "How do you reverse list with slicing?", "code": "nums = [1,2,3,4,5]", "opts": ["nums[::-1]", "nums[:-1]", "nums[::1]", "nums[-1:0]"], "ans": 0, "exp": "[::-1] = step -1, goes backwards through entire list. Returns reversed copy."}, {"q": "What does sum([1,2,3,4,5]) return?", "code": null, "opts": ["5", "15", "[1,2,3,4,5]", "Error"], "ans": 1, "exp": "sum() adds all elements. 1+2+3+4+5 = 15."}, {"q": "What does del nums[2] do?", "code": "nums = [10,20,30,40,50]\ndel nums[2]\nprint(nums)", "opts": ["[10,20,40,50]", "[10,20,30,50]", "[30]", "Error"], "ans": 0, "exp": "del list[index] permanently removes element at index. Index 2 is 30. Result: [10,20,40,50]."}, {"q": "What is the output?", "code": "a = [1,2,3]\nb = a.copy()\nb.append(4)\nprint(a, b)", "opts": ["[1,2,3] [1,2,3,4]", "[1,2,3,4] [1,2,3,4]", "[1,2,3] [1,2,3]", "Error"], "ans": 0, "exp": ".copy() creates independent copy. Changes to b do not affect a. Output: [1,2,3] [1,2,3,4]"}, {"q": "What does max([3,7,1,9,4]) return?", "code": null, "opts": ["3", "7", "9", "4"], "ans": 2, "exp": "max() finds largest value. 9 is maximum."}, {"q": "What does this output?", "code": "nums = [3,1,4,1,5,9]\nprint(nums.index(1))", "opts": ["0", "1", "2", "4"], "ans": 1, "exp": ".index(value) finds FIRST occurrence. 1 first appears at index 1. Output: 1"}, {"q": "What is the 2D list operation output?", "code": "grid = [[1,2,3],[4,5,6],[7,8,9]]\nprint(grid[1][2])", "opts": ["5", "6", "8", "2"], "ans": 1, "exp": "grid[1] = second row [4,5,6]. Then [2] = third element = 6. Output: 6"}]}, {"id": "s3l5", "title": "Lists Challenge", "sub": "Advanced list mastery", "type": "practice", "questions": [{"q": "What does this produce?", "code": "nums = list(range(1, 11))\nprint(nums[3:8:2])", "opts": ["[4,6,8]", "[3,5,7]", "[4,5,6,7,8]", "[4,6]"], "ans": 0, "exp": "nums=[1..10]. Slice [3:8:2]: start index 3 (value 4), step 2. Indices 3,5,7 = values 4,6,8."}, {"q": "What is the output?", "code": "words = ['banana','apple','cherry','date']\nwords.sort(key=len)\nprint(words[0])", "opts": ["banana", "apple", "cherry", "date"], "ans": 3, "exp": "Sort by length: date(4), apple(5), banana(6), cherry(6). Shortest is date. Output: date"}, {"q": "What does this flatten?", "code": "nested = [[1,2],[3,4],[5,6]]\nflat = [x for row in nested for x in row]\nprint(flat)", "opts": ["[[1,2],[3,4],[5,6]]", "[1,2,3,4,5,6]", "[1,3,5]", "Error"], "ans": 1, "exp": "Nested comprehension: for each row, for each x in row. Flattens 2D list to [1,2,3,4,5,6]."}, {"q": "What does list(zip(a,b)) create?", "code": "a = [1,2,3]\nb = [4,5,6]", "opts": ["[1,4,2,5,3,6]", "[(1,4),(2,5),(3,6)]", "[[1,4],[2,5],[3,6]]", "Error"], "ans": 1, "exp": "zip() pairs elements from multiple iterables. Creates list of tuples: [(1,4),(2,5),(3,6)]."}, {"q": "What is printed?", "code": "items = [1,2,3,4,5]\nprint(items[::-1][1::2])", "opts": ["[4,2]", "[5,3,1]", "[5,4,3]", "[3,1]"], "ans": 0, "exp": "items[::-1]=[5,4,3,2,1]. Then [1::2] takes every 2nd from index 1: [4,2]. Output: [4,2]"}, {"q": "What does this count?", "code": "sentence = 'the cat sat on the mat'\nwords = sentence.split()\nprint(words.count('the'))", "opts": ["1", "2", "3", "the"], "ans": 1, "exp": "'the' appears twice in the sentence. words.count('the') returns 2."}, {"q": "What does this find?", "code": "nums = [5,2,8,1,9,3]\nnums_sorted = sorted(nums)\nprint(nums_sorted[len(nums_sorted)//2])", "opts": ["5", "2", "8", "3"], "ans": 0, "exp": "sorted=[1,2,3,5,8,9]. len=6, 6//2=3. Index 3 = value 5. Output: 5"}, {"q": "What is the output?", "code": "pairs = [(1,'a'),(2,'b'),(3,'c')]\nfor num, letter in pairs:\n    print(f'{num}:{letter}', end=' ')", "opts": ["1:a 2:b 3:c ", "(1,a) (2,b) (3,c)", "1 2 3 a b c", "Error"], "ans": 0, "exp": "Tuple unpacking in for loop. Prints each formatted. Output: 1:a 2:b 3:c "}, {"q": "What is the output?", "code": "nums = [1,2,3]\nprint(nums + nums)", "opts": ["[1,2,3]", "[1,2,3,1,2,3]", "[2,4,6]", "Error"], "ans": 1, "exp": "+ concatenates lists. [1,2,3] + [1,2,3] = [1,2,3,1,2,3]. Output: [1,2,3,1,2,3]"}, {"q": "What does this filter out?", "code": "data = ['', 'hello', '', 'world', '']\nresult = [x for x in data if x]\nprint(result)", "opts": ["['','','']", "['hello','world']", "All items", "Error"], "ans": 1, "exp": "Empty strings are falsy. if x: keeps only truthy values. Output: ['hello','world']"}]}]}, {"id": "s4", "title": "Functions", "desc": "Write reusable blocks of code that accept inputs and return outputs", "color": "#f59e0b", "lessons": [{"id": "s4l1", "title": "Defining Functions", "sub": "Create reusable code blocks", "type": "learn", "questions": [{"q": "How do you define a function?", "code": null, "opts": ["function greet():", "def greet():", "define greet():", "func greet():"], "ans": 1, "exp": "def keyword defines a function. Followed by name, parentheses, colon. Body is indented."}, {"q": "How do you call a function?", "code": "def say_hello():\n    print('Hello!')", "opts": ["say_hello", "call say_hello()", "say_hello()", "run say_hello"], "ans": 2, "exp": "Function calls use name + parentheses: say_hello(). Without (), you reference but do not call it."}, {"q": "What does a parameter do?", "code": "def greet(name):\n    print(f'Hello, {name}!')", "opts": ["Names the function", "Receives input values", "Stores the output", "Calls the function"], "ans": 1, "exp": "Parameters receive values (arguments) when the function is called."}, {"q": "What is the output?", "code": "def square(n):\n    return n * n\nresult = square(5)\nprint(result)", "opts": ["5", "25", "n * n", "Error"], "ans": 1, "exp": "square(5) with n=5 returns 5*5=25. Stored in result. Output: 25"}, {"q": "What does return do?", "code": null, "opts": ["Prints the value", "Ends the program", "Sends value back to the caller", "Creates a variable"], "ans": 2, "exp": "return exits the function and sends a value back to the caller."}, {"q": "What does a function without return return?", "code": "def no_return():\n    x = 5\nprint(no_return())", "opts": ["5", "0", "None", "Error"], "ans": 2, "exp": "Functions without return implicitly return None. print(no_return()) prints: None"}, {"q": "What is the output?", "code": "def add(a, b):\n    return a + b\nprint(add(3, 4))", "opts": ["add", "3 + 4", "7", "Error"], "ans": 2, "exp": "add(3,4) with a=3, b=4 returns 7. Output: 7"}, {"q": "What is a default parameter?", "code": "def greet(name, greeting='Hello'):\n    return f'{greeting}, {name}!'\nprint(greet('Alice'))", "opts": ["Hello, Alice!", "greeting, name!", "Alice, Hello!", "Error"], "ans": 0, "exp": "greeting='Hello' is default. greet('Alice') uses default. Output: Hello, Alice!"}, {"q": "Can functions have multiple parameters?", "code": null, "opts": ["No, only one", "Yes, separated by commas", "Yes but max 3", "Only same type"], "ans": 1, "exp": "Functions can have any number of parameters separated by commas."}, {"q": "What does DRY mean?", "code": null, "opts": ["Do Run Yourself", "Do not Repeat Yourself", "Delete Redundant Yield", "Direct Return Yield"], "ans": 1, "exp": "DRY = Do not Repeat Yourself. Functions let you write code once and reuse it."}]}, {"id": "s4l2", "title": "Return Values", "sub": "Functions that compute and return", "type": "learn", "questions": [{"q": "Can a function return multiple values?", "code": "def min_max(lst):\n    return min(lst), max(lst)\na, b = min_max([3,1,4,1,5])\nprint(a, b)", "opts": ["Error", "1 5", "3 5", "1 4"], "ans": 1, "exp": "Return multiple values as tuple. Unpack with a, b = Output: 1 5"}, {"q": "What is the output?", "code": "def classify(n):\n    if n > 0: return 'positive'\n    elif n < 0: return 'negative'\n    else: return 'zero'\nprint(classify(-5))", "opts": ["positive", "negative", "zero", "-5"], "ans": 1, "exp": "n=-5 < 0 is True. Returns 'negative'. Output: negative"}, {"q": "What does safe_divide return?", "code": "def safe_divide(a, b):\n    if b == 0: return None\n    return a / b\nresult = safe_divide(10, 0)\nprint(result)", "opts": ["10", "Error", "0", "None"], "ans": 3, "exp": "When b=0, returns None (preventing ZeroDivisionError). print(None) outputs: None"}, {"q": "What is a recursive function?", "code": null, "opts": ["Returns a list", "A function that calls itself", "Has no return", "Has *args"], "ans": 1, "exp": "Recursion means a function that calls itself. Needs a base case to stop."}, {"q": "What does this compute?", "code": "def factorial(n):\n    if n == 0: return 1\n    return n * factorial(n - 1)\nprint(factorial(4))", "opts": ["4", "10", "24", "16"], "ans": 2, "exp": "4! = 4*3*2*1 = 24. Recursion: factorial(4) = 4 * factorial(3) = ... = 24."}, {"q": "What is the output?", "code": "def double_if_even(n):\n    if n % 2 == 0: return n * 2\n    return n\nprint(double_if_even(6), double_if_even(7))", "opts": ["12 14", "12 7", "6 7", "6 14"], "ans": 1, "exp": "6 is even: 12. 7 is odd: 7. Output: 12 7"}, {"q": "What does this chain output?", "code": "def add_one(x): return x + 1\ndef double(x): return x * 2\nprint(add_one(double(3)))", "opts": ["7", "8", "6", "9"], "ans": 0, "exp": "Evaluates inside out. double(3)=6. add_one(6)=7. Output: 7"}, {"q": "What does lambda do?", "code": "square = lambda x: x**2\nprint(square(4))", "opts": ["16", "lambda", "4", "Error"], "ans": 0, "exp": "lambda creates anonymous function. lambda x: x**2 equals def f(x): return x**2. Output: 16"}, {"q": "When should you use lambda?", "code": null, "opts": ["Always instead of def", "Short simple functions as arguments", "For multiple statements", "Never"], "ans": 1, "exp": "Lambda is ideal for short throwaway functions, especially with sorted(), map(), filter()."}, {"q": "What does map() do?", "code": "nums = [1,2,3,4]\nresult = list(map(lambda x: x**2, nums))\nprint(result)", "opts": ["[1,4,9,16]", "[2,4,6,8]", "[1,2,3,4]", "Error"], "ans": 0, "exp": "map() applies function to every element. x**2 squares each. Output: [1,4,9,16]"}]}, {"id": "s4l3", "title": "Scope", "sub": "Local vs global variables", "type": "learn", "questions": [{"q": "What is scope?", "code": null, "opts": ["Program size", "Where variables can be accessed", "Execution speed", "Number of functions"], "ans": 1, "exp": "Scope determines where in your code a variable is accessible. Variables inside a function are local."}, {"q": "What is the output?", "code": "x = 10\ndef show():\n    x = 20\n    print(x)\nshow()\nprint(x)", "opts": ["20\\n20", "10\\n10", "20\\n10", "10\\n20"], "ans": 2, "exp": "Inside show(), x=20 is LOCAL. Outside x=10 is GLOBAL. Two separate variables! Output: 20 then 10"}, {"q": "What does global keyword do?", "code": "count = 0\ndef increment():\n    global count\n    count += 1", "opts": ["Creates a new variable", "Allows modifying a global variable inside function", "Makes count visible outside", "Deletes the variable"], "ans": 1, "exp": "Without global, you can only READ globals. global count lets the function MODIFY it."}, {"q": "What is the output?", "code": "total = 0\ndef add(n):\n    global total\n    total += n\nadd(5)\nadd(3)\nprint(total)", "opts": ["0", "5", "8", "Error"], "ans": 2, "exp": "global total lets each call modify same global. add(5) total=5. add(3) total=8. Output: 8"}, {"q": "What is the LEGB rule?", "code": null, "opts": ["List Enumerate Global Break", "Local Enclosing Global Built-in", "Loop Expression Generic Boolean", "None of these"], "ans": 1, "exp": "LEGB: Python searches Local then Enclosing then Global then Built-in scope for variables."}, {"q": "What is the output?", "code": "def outer():\n    x = 'outer'\n    def inner():\n        print(x)\n    inner()\nouter()", "opts": ["outer", "inner", "Error", "None"], "ans": 0, "exp": "inner() looks for x locally - not found. Checks enclosing (outer) scope - found 'outer'! Output: outer"}, {"q": "What does nonlocal do?", "code": "def outer():\n    x = 0\n    def inner():\n        nonlocal x\n        x += 1\n    inner()\n    return x\nprint(outer())", "opts": ["0", "1", "Error", "None"], "ans": 1, "exp": "nonlocal modifies variable in ENCLOSING scope. inner() modifies outer's x. Returns 1."}, {"q": "What is a pure function?", "code": null, "opts": ["Has no parameters", "Uses only math", "No side effects, same output for same input", "Returns None"], "ans": 2, "exp": "Pure functions: same input = same output, no side effects. Predictable and testable."}, {"q": "What does this print?", "code": "x = 'global'\ndef test():\n    x = 'local'\n    return x\nprint(test(), x)", "opts": ["global global", "local local", "local global", "global local"], "ans": 2, "exp": "test() uses local x='local'. Global x='global' unchanged. Output: local global"}, {"q": "What does this output?", "code": "result = []\ndef add_item(x):\n    result.append(x)\nadd_item(1)\nadd_item(2)\nprint(result)", "opts": ["[]", "[1, 2]", "Error", "[1]\\n[2]"], "ans": 1, "exp": "Lists are mutable. result is modified via .append(). No global keyword needed to mutate. Output: [1,2]"}]}, {"id": "s4l4", "title": "args and kwargs", "sub": "Variable arguments", "type": "learn", "questions": [{"q": "What does *args allow?", "code": "def add_all(*args):\n    return sum(args)\nprint(add_all(1,2,3,4,5))", "opts": ["Exactly 5 arguments", "Any number of positional arguments", "Keyword args only", "Exactly 0 args"], "ans": 1, "exp": "*args collects any number of positional arguments into a tuple. sum() adds them: 15."}, {"q": "What does **kwargs do?", "code": "def show(**kwargs):\n    print(len(kwargs))\nshow(a=1, b=2, c=3)", "opts": ["Takes a list", "Collects keyword arguments into a dict", "Same as *args", "Requires 2 args"], "ans": 1, "exp": "**kwargs collects any number of keyword arguments into a dictionary."}, {"q": "What are keyword arguments?", "code": "def info(name, age):\n    print(f'{name} is {age}')\ninfo(age=25, name='Bob')", "opts": ["Arguments in order", "Named arguments in any order", "Default values", "Required arguments"], "ans": 1, "exp": "Keyword arguments use parameter name: name='Bob'. Can be in any order."}, {"q": "What is the output?", "code": "def power(base, exp=2):\n    return base ** exp\nprint(power(3), power(3, 3))", "opts": ["9 27", "6 9", "3 3", "Error"], "ans": 0, "exp": "power(3) uses default exp=2: 3**2=9. power(3,3) uses exp=3: 3**3=27. Output: 9 27"}, {"q": "What does this return?", "code": "def triple(*nums):\n    return [n * 3 for n in nums]\nprint(triple(1,2,3,4))", "opts": ["[3,6,9,12]", "12", "[1,2,3,4]", "Error"], "ans": 0, "exp": "*nums collects (1,2,3,4). Comprehension multiplies each by 3: [3,6,9,12]."}, {"q": "What does *[1,2,3] do in a function call?", "code": null, "opts": ["Passes list as one argument", "Unpacks list into three separate arguments", "Error", "Creates a new list"], "ans": 1, "exp": "* unpacking in function CALL unpacks iterable into separate arguments. f(*[1,2,3]) = f(1,2,3)."}, {"q": "What is the output?", "code": "def show(**data):\n    print(len(data))\nshow(a=1, b=2, c=3, d=4)", "opts": ["4", "{'a':1}", "abcd", "Error"], "ans": 0, "exp": "**data collects 4 keyword args into dict. len(data) = 4 keys. Output: 4"}, {"q": "What is the output?", "code": "def f(*args, **kwargs):\n    print(len(args), len(kwargs))\nf(1, 2, 3, x=4, y=5)", "opts": ["3 2", "5 0", "2 3", "Error"], "ans": 0, "exp": "3 positional + 2 keyword args. Output: 3 2"}, {"q": "What does filter() do?", "code": "nums = [1,2,3,4,5,6]\nresult = list(filter(lambda x: x%2==0, nums))\nprint(result)", "opts": ["[1,3,5]", "[2,4,6]", "[1,2,3,4,5,6]", "Error"], "ans": 1, "exp": "filter() keeps elements where lambda is True. Even numbers pass x%2==0. Output: [2,4,6]"}, {"q": "What is a higher-order function?", "code": null, "opts": ["A function on line 1", "A function that takes or returns other functions", "A function with many parameters", "A recursive function"], "ans": 1, "exp": "Higher-order functions take functions as arguments or return functions. map(), filter(), sorted() are examples."}]}, {"id": "s4l5", "title": "Functions Challenge", "sub": "Advanced function mastery", "type": "practice", "questions": [{"q": "What does this output?", "code": "def apply_twice(func, x):\n    return func(func(x))\ndef add5(n): return n + 5\nprint(apply_twice(add5, 10))", "opts": ["15", "20", "25", "5"], "ans": 1, "exp": "apply_twice calls func twice. add5(10)=15. add5(15)=20. Output: 20"}, {"q": "What does this recursive function compute?", "code": "def fib(n):\n    if n <= 1: return n\n    return fib(n-1) + fib(n-2)\nprint(fib(7))", "opts": ["7", "13", "21", "8"], "ans": 1, "exp": "Fibonacci: fib(7)=fib(6)+fib(5)=8+5=13. Sequence: 0,1,1,2,3,5,8,13..."}, {"q": "What is a closure?", "code": null, "opts": ["Closes the program", "Function remembering variables from outer scope", "Function with no return", "Recursive function"], "ans": 1, "exp": "A closure is an inner function that remembers variables from its enclosing scope."}, {"q": "What does this print?", "code": "def gen():\n    for i in range(5):\n        yield i * 2\nprint(list(gen()))", "opts": ["[0,2,4,6,8]", "[0,1,2,3,4]", "[2,4,6,8,10]", "Error"], "ans": 0, "exp": "Generator yields 0*2,1*2,...,4*2 = 0,2,4,6,8. list() collects all. Output: [0,2,4,6,8]"}, {"q": "What is the output?", "code": "words = ['banana','apple','cherry']\nsorted_words = sorted(words, key=len)\nprint(sorted_words[0])", "opts": ["banana", "apple", "cherry", "Error"], "ans": 1, "exp": "Sort by length: apple(5), banana(6), cherry(6). Shortest first = apple. Output: apple"}, {"q": "What does reduce compute?", "code": "from functools import reduce\nnums = [1,2,3,4,5]\nresult = reduce(lambda a,b: a*b, nums)\nprint(result)", "opts": ["15", "120", "25", "Error"], "ans": 1, "exp": "reduce multiplies cumulatively: 1*2=2, 2*3=6, 6*4=24, 24*5=120. Output: 120"}, {"q": "What is the output?", "code": "def make_adder(n):\n    def adder(x): return x + n\n    return adder\nadd10 = make_adder(10)\nprint(add10(5))", "opts": ["15", "10", "5", "Error"], "ans": 0, "exp": "make_adder(10) returns adder with n=10 captured. add10(5) = 5+10 = 15. Output: 15"}, {"q": "What is a generator function?", "code": null, "opts": ["Creates other functions", "Uses yield instead of return, produces values lazily", "Random number function", "A constructor"], "ans": 1, "exp": "Generators use yield to produce values one at a time. Memory-efficient for large sequences."}, {"q": "What does this output?", "code": "funcs = [lambda x, i=i: x+i for i in range(3)]\nprint([f(10) for f in funcs])", "opts": ["[10,10,10]", "[10,11,12]", "[11,12,13]", "Error"], "ans": 1, "exp": "i=i captures current i value. Results: [10+0, 10+1, 10+2] = [10,11,12]."}, {"q": "What does this output?", "code": "def counter():\n    count = [0]\n    def inc():\n        count[0] += 1\n        return count[0]\n    return inc\nc = counter()\nprint(c(), c(), c())", "opts": ["1 1 1", "1 2 3", "0 1 2", "Error"], "ans": 1, "exp": "list count=[0] stores mutable state. Each call increments and returns. Output: 1 2 3"}]}]}, {"id": "s5", "title": "Dictionaries & Sets", "desc": "Master Python's key-value stores and unique collection data structures", "color": "#06b6d4", "lessons": [{"id": "s5l1", "title": "Dictionaries", "sub": "Key-value data storage", "type": "learn", "questions": [{"q": "How do you create a dictionary?", "code": null, "opts": ["[key: value]", "(key, value)", "{'key': value}", "key => value"], "ans": 2, "exp": "Dictionaries use curly braces with key: value pairs. Keys must be unique and immutable."}, {"q": "How do you access a value?", "code": "person = {'name': 'Alice', 'age': 30}\nprint(person['name'])", "opts": ["person.name", "person[0]", "Alice", "Error"], "ans": 2, "exp": "Access values using the KEY in brackets: person['name']. Output: Alice"}, {"q": "What does .get() do differently?", "code": "d = {'a': 1}\nprint(d.get('b', 0))", "opts": ["Raises KeyError", "Returns None", "Returns 0 (default value)", "Returns 'b'"], "ans": 2, "exp": ".get(key, default) returns default if key missing, instead of raising KeyError. Returns 0 here."}, {"q": "How do you add a new key?", "code": "car = {'brand': 'Toyota'}\ncar['color'] = 'blue'\nprint(len(car))", "opts": ["1", "2", "Error", "0"], "ans": 1, "exp": "car['color'] = 'blue' adds new key. len(car) = 2. Car now has brand and color."}, {"q": "What does .keys() return?", "code": "d = {'a':1,'b':2,'c':3}\nprint(list(d.keys()))", "opts": ["[1,2,3]", "['a','b','c']", "[('a',1)]", "Error"], "ans": 1, "exp": ".keys() returns view of all keys. list() converts it. Output: ['a','b','c']"}, {"q": "What does .items() enable?", "code": "d = {'x':10,'y':20}\nfor key,val in d.items():\n    print(key, val)", "opts": ["x\\ny", "10\\n20", "x 10\\ny 20", "Error"], "ans": 2, "exp": ".items() returns (key,value) tuples. Loop unpacks each. Output: x 10 then y 20"}, {"q": "How do you check if key exists?", "code": "scores = {'alice':95,'bob':87}\nprint('charlie' in scores)", "opts": ["True", "False", "Error", "None"], "ans": 1, "exp": "in checks if KEY exists. 'charlie' is not a key. Returns False."}, {"q": "What does .pop() do?", "code": "d = {'a':1,'b':2,'c':3}\nval = d.pop('b')\nprint(val, len(d))", "opts": ["2 2", "2 3", "Error", "b 2"], "ans": 0, "exp": ".pop(key) removes pair and returns VALUE. val=2, dict loses 'b' so len=2. Output: 2 2"}, {"q": "What does a dict comprehension create?", "code": "squares = {x: x**2 for x in range(1,6)}\nprint(squares[3])", "opts": ["3", "9", "6", "Error"], "ans": 1, "exp": "{x: x**2} maps each x to its square. squares[3] = 3**2 = 9. Output: 9"}, {"q": "What is the output?", "code": "inventory = {'apples':5,'bananas':3}\ninventory['apples'] += 2\nprint(inventory['apples'])", "opts": ["5", "7", "2", "Error"], "ans": 1, "exp": "inventory['apples'] += 2 reads 5, adds 2, stores 7. Output: 7"}]}, {"id": "s5l2", "title": "Sets", "sub": "Unique unordered collections", "type": "learn", "questions": [{"q": "What is unique about sets?", "code": null, "opts": ["They are ordered", "Elements can repeat", "Elements are always unique", "They are immutable"], "ans": 2, "exp": "Sets automatically eliminate duplicates. Every element appears exactly once."}, {"q": "What does this create?", "code": "s = {1,2,3,2,1,3,3}\nprint(len(s))", "opts": ["7", "3", "1", "Error"], "ans": 1, "exp": "Sets remove duplicates. {1,2,3,2,1,3,3} has 3 unique elements. len = 3."}, {"q": "How to remove duplicates from list?", "code": "nums = [1,2,2,3,3,3,4]\nunique = list(set(nums))\nprint(len(unique))", "opts": ["7", "4", "3", "Error"], "ans": 1, "exp": "Convert to set (removes duplicates: {1,2,3,4}) then back to list. Length = 4."}, {"q": "What does set union do?", "code": "a = {1,2,3}\nb = {3,4,5}\nprint(a | b)", "opts": ["[3]", "{1,2,3,4,5}", "{1,2,4,5}", "Error"], "ans": 1, "exp": "Union (|) combines all elements from both sets, no duplicates. Output: {1,2,3,4,5}"}, {"q": "What does intersection return?", "code": "a = {1,2,3,4}\nb = {3,4,5,6}\nprint(a & b)", "opts": ["[1,2,5,6]", "{3,4}", "{1,2,3,4,5,6}", "Error"], "ans": 1, "exp": "Intersection (&) returns elements in BOTH sets. 3 and 4 are in both. Output: {3,4}"}, {"q": "What does set difference do?", "code": "a = {1,2,3,4,5}\nb = {4,5,6,7}\nprint(a - b)", "opts": ["[1,2,3]", "{1,2,3}", "{6,7}", "Error"], "ans": 1, "exp": "Difference (-) returns elements in a NOT in b. 1,2,3 only in a. Output: {1,2,3}"}, {"q": "What does .add() do?", "code": "s = {1,2,3}\ns.add(4)\ns.add(2)\nprint(len(s))", "opts": ["4", "5", "6", "Error"], "ans": 0, "exp": ".add() adds element. Adding 2 again has no effect. len = 4. Output: 4"}, {"q": "What does symmetric difference do?", "code": "a = {1,2,3,4,5}\nb = {4,5,6,7,8}\nprint(a ^ b)", "opts": ["[4,5]", "{1,2,3,6,7,8}", "{1,2,3,4,5,6,7,8}", "Error"], "ans": 1, "exp": "Symmetric difference (^): elements in EITHER but NOT BOTH. Opposite of intersection."}, {"q": "What is frozenset?", "code": null, "opts": ["Set you cannot add to", "An immutable set", "A sorted set", "A set with numbers only"], "ans": 1, "exp": "frozenset is immutable version of set. Can be used as dictionary key (regular sets cannot)."}, {"q": "What is the output?", "code": "a = {1,2,3}\nb = {1,2,3,4,5}\nprint(a.issubset(b))", "opts": ["True", "False", "Error", "None"], "ans": 0, "exp": ".issubset(other) returns True if all elements of a are in b. {1,2,3} is subset of {1,2,3,4,5}."}]}, {"id": "s5l3", "title": "Tuples", "sub": "Immutable ordered sequences", "type": "learn", "questions": [{"q": "How do you create a tuple?", "code": null, "opts": ["(1, 2, 3)", "[1, 2, 3]", "{1, 2, 3}", "<1, 2, 3>"], "ans": 0, "exp": "Tuples use parentheses (). Unlike lists, tuples are IMMUTABLE."}, {"q": "What makes tuples different from lists?", "code": null, "opts": ["Tuples are faster", "Tuples are immutable (cannot be changed)", "Tuples use less memory", "All of the above"], "ans": 3, "exp": "Tuples are immutable (key point), slightly faster, and use less memory. All are true."}, {"q": "What happens if you modify a tuple?", "code": "t = (1,2,3)\nt[0] = 10", "opts": ["t becomes (10,2,3)", "TypeError: tuple does not support item assignment", "Creates new tuple", "Nothing"], "ans": 1, "exp": "Tuples are immutable. Any modification attempt raises TypeError."}, {"q": "What does tuple unpacking do?", "code": "point = (3,7)\nx, y = point\nprint(f'x={x}, y={y}')", "opts": ["x=3, y=7", "x=point, y=point", "Error", "(3,7)"], "ans": 0, "exp": "Tuple unpacking assigns (3,7) to x=3 and y=7. Output: x=3, y=7"}, {"q": "How do you create a one-element tuple?", "code": null, "opts": ["(1)", "(1,)", "tuple(1)", "[1]"], "ans": 1, "exp": "Trailing comma required. (1) is just int in parens. (1,) is a tuple with one element."}, {"q": "What does this print?", "code": "coords = (10,20,30)\nprint(coords[1:])", "opts": ["(20,)", "(20,30)", "[20,30]", "Error"], "ans": 1, "exp": "Slicing works on tuples. coords[1:] = elements from index 1: (20,30). Returns a tuple."}, {"q": "Can a tuple contain mutable objects?", "code": "t = ([1,2],[3,4])\nt[0].append(99)\nprint(t[0])", "opts": ["Error", "[1,2]", "[1,2,99]", "[99]"], "ans": 2, "exp": "Tuple cannot change which objects it holds, but list inside CAN be modified. Output: [1,2,99]"}, {"q": "What does tuple() convert?", "code": "lst = [1,2,3]\nt = tuple(lst)\nprint(t)", "opts": ["[1,2,3]", "(1,2,3)", "Error", "{1,2,3}"], "ans": 1, "exp": "tuple() converts any iterable to tuple. tuple([1,2,3]) creates (1,2,3)."}, {"q": "When should you use tuples?", "code": null, "opts": ["When you need to sort", "When data should not change (coordinates, RGB)", "When you need to append items", "When performance is not important"], "ans": 1, "exp": "Use tuples for immutable data: coordinates, colors, database records, dictionary keys."}, {"q": "What does this print?", "code": "t = (1,2,3,2,1)\nprint(t.count(2))", "opts": ["2", "1", "3", "Error"], "ans": 0, "exp": ".count() works on tuples. 2 appears twice. Output: 2"}]}, {"id": "s5l4", "title": "Data Structures Challenge", "sub": "Master all data structures", "type": "practice", "questions": [{"q": "Which is best for counting word frequencies?", "code": null, "opts": ["List", "Tuple", "Dictionary", "Set"], "ans": 2, "exp": "Dictionaries map words to counts: {'the': 5, 'cat': 2}. Use dict.get(word, 0)+1 to count."}, {"q": "What is the output?", "code": "data = {'a':[1,2],'b':[3,4]}\ndata['a'].append(99)\nprint(data['a'])", "opts": ["[1,2]", "[1,2,99]", "Error", "[99]"], "ans": 1, "exp": "List value data['a'] is mutable. .append(99) modifies in-place. Output: [1,2,99]"}, {"q": "What does this produce?", "code": "text = 'hello world'\nprint(len(set(text)))", "opts": ["11", "8", "7", "10"], "ans": 1, "exp": "'hello world' unique chars: h,e,l,o,' ',w,r,d = 8 unique. Output: 8"}, {"q": "Which is fastest for checking if value exists?", "code": null, "opts": ["List with in", "Tuple with in", "Set with in", "All the same"], "ans": 2, "exp": "Set in lookup is O(1) using hashing. List/tuple in is O(n) checking each element."}, {"q": "Can tuples be dictionary keys?", "code": "t = (1,2,3)\nd = {t: 'tuple key'}\nprint(d[t])", "opts": ["tuple key", "Error", "(1,2,3)", "t"], "ans": 0, "exp": "Tuples are immutable/hashable so they CAN be dict keys. Lists cannot. Output: tuple key"}, {"q": "How do you merge two dicts in Python 3.9+?", "code": "a = {'x':1}\nb = {'y':2}", "opts": ["a + b", "a | b", "merge(a,b)", "dict.merge(a,b)"], "ans": 1, "exp": "Python 3.9+ supports | for dict merging: a | b creates new dict with all pairs from both."}, {"q": "What does this group by?", "code": "words = ['cat','car','bar','bat','bee']\ngroups = {}\nfor w in words:\n    groups.setdefault(w[0],[]).append(w)\nprint(groups['b'])", "opts": ["['bar','bat','bee']", "['bar']", "['b']", "Error"], "ans": 0, "exp": "setdefault returns existing or sets default. Groups by first letter. groups['b'] = ['bar','bat','bee']."}, {"q": "What is the output?", "code": "a = {1,2,3}\nfor x in sorted(a):\n    print(x, end=' ')", "opts": ["1 2 3 ", "3 2 1 ", "Random order", "Error"], "ans": 0, "exp": "sorted() returns sorted list from set. Prints: 1 2 3 "}, {"q": "What does this find?", "code": "inventory = [('apple',3),('banana',5),('cherry',1)]\nmax_item = max(inventory, key=lambda x: x[1])\nprint(max_item[0])", "opts": ["apple", "banana", "cherry", "Error"], "ans": 1, "exp": "max() with key compares by count. Banana has 5 (highest). Output: banana"}, {"q": "What is the output?", "code": "d = {'a':1,'b':2,'c':3}\nprint(sum(d.values()))", "opts": ["6", "abc", "3", "Error"], "ans": 0, "exp": ".values() returns all values. sum([1,2,3]) = 6. Output: 6"}]}]}];
+
+// ============================================================
+// STATE
+// ============================================================
+var ST = { secIdx: 0, lessonId: null, quizData: null };
+var PROG = {};
+(function(){
+  try {
+    var s = localStorage.getItem('pylearn_v3');
+    if(s) PROG = JSON.parse(s);
+  } catch(e) {}
+})();
+
+function persist(){
+  try { localStorage.setItem('pylearn_v3', JSON.stringify(PROG)); } catch(e) {}
+}
+
+function isDone(lid){ return !!(PROG[lid] && PROG[lid].done); }
+
+function isUnlocked(si, li){
+  if(si === 0 && li === 0) return true;
+  if(li > 0) return isDone(CURRICULUM[si].lessons[li-1].id);
+  if(si > 0){
+    var ps = CURRICULUM[si-1];
+    return isDone(ps.lessons[ps.lessons.length-1].id);
+  }
+  return false;
+}
+
+function totalLessons(){
+  return CURRICULUM.reduce(function(a, s){ return a + s.lessons.length; }, 0);
+}
+
+function doneLessons(){
+  return Object.keys(PROG).filter(function(k){ return PROG[k] && PROG[k].done; }).length;
+}
+
+function secDoneLessons(si){
+  return CURRICULUM[si].lessons.filter(function(l){ return isDone(l.id); }).length;
+}
+
+// ============================================================
+// SYNTAX HIGHLIGHTER — single-pass tokenizer, no regex on HTML
+// ============================================================
+function highlight(code){
+  if(!code) return '';
+
+  var KEYWORDS = {
+    'def':1,'return':1,'if':1,'elif':1,'else':1,'while':1,'for':1,
+    'in':1,'and':1,'or':1,'not':1,'True':1,'False':1,'None':1,'class':1,
+    'import':1,'from':1,'break':1,'continue':1,'pass':1,'lambda':1,
+    'global':1,'nonlocal':1,'del':1,'yield':1,'match':1,'case':1,
+    'with':1,'as':1,'raise':1,'try':1,'except':1,'finally':1
+  };
+
+  var BUILTINS = {
+    'print':1,'input':1,'len':1,'range':1,'int':1,'float':1,'str':1,
+    'bool':1,'list':1,'dict':1,'set':1,'tuple':1,'type':1,'abs':1,
+    'max':1,'min':1,'sum':1,'sorted':1,'enumerate':1,'zip':1,'map':1,
+    'filter':1,'round':1,'append':1,'extend':1,'pop':1,'remove':1,
+    'sort':1,'reverse':1,'index':1,'count':1,'get':1,'keys':1,
+    'values':1,'items':1,'split':1,'upper':1,'lower':1,'strip':1,
+    'replace':1,'startswith':1,'endswith':1,'isdigit':1,'capitalize':1
+  };
+
+  function esc(s){
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function span(cls, s){
+    return '<span class="' + cls + '">' + esc(s) + '</span>';
+  }
+
+  var out = '';
+  var i = 0;
+  var src = code;
+  var n = src.length;
+
+  while(i < n){
+    var c = src[i];
+
+    // — Comment: # to end of line
+    if(c === '#'){
+      var end = src.indexOf('\n', i);
+      var tok = (end === -1) ? src.slice(i) : src.slice(i, end);
+      out += span('cmt', tok);
+      i += tok.length;
+      continue;
+    }
+
+    // — String: single or double quoted (with triple-quote support)
+    if(c === '"' || c === "'"){
+      var q = c;
+      var isTriple = src.slice(i, i+3) === q+q+q;
+      var delim = isTriple ? q+q+q : q;
+      var j = i + delim.length;
+      while(j < n){
+        if(src[j] === '\\'){
+          j += 2; // skip escaped character
+          continue;
+        }
+        if(src.slice(j, j + delim.length) === delim){
+          j += delim.length;
+          break;
+        }
+        j++;
+      }
+      out += span('str', src.slice(i, j));
+      i = j;
+      continue;
+    }
+
+    // — Number: digit run (with optional decimal)
+    if(c >= '0' && c <= '9'){
+      var j = i;
+      while(j < n && ((src[j] >= '0' && src[j] <= '9') || src[j] === '.')) j++;
+      out += span('num', src.slice(i, j));
+      i = j;
+      continue;
+    }
+
+    // — Identifier: keyword, builtin, or plain name
+    if((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '_'){
+      var j = i;
+      while(j < n){
+        var ch = src[j];
+        if((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
+           (ch >= '0' && ch <= '9') || ch === '_'){
+          j++;
+        } else {
+          break;
+        }
+      }
+      var word = src.slice(i, j);
+      var nextChar = (j < n) ? src[j] : '';
+      if(KEYWORDS[word]){
+        out += span('kw', word);
+      } else if(BUILTINS[word] && nextChar === '('){
+        out += span('bi', word);
+      } else {
+        out += esc(word);
+      }
+      i = j;
+      continue;
+    }
+
+    // — Everything else: escape HTML special chars and output
+    out += esc(c);
+    i++;
+  }
+
+  return out;
+}
+
+// ============================================================
+// PANEL MANAGER
+// ============================================================
+function showPanel(id){
+  ['home-panel','quiz-panel','result-panel','sc-panel'].forEach(function(p){
+    var el = document.getElementById(p);
+    if(el) el.classList.remove('show');
+  });
+  var target = document.getElementById(id);
+  if(target){
+    target.classList.add('show');
+    document.getElementById('main').scrollTop = 0;
+  }
+}
+
+// ============================================================
+// NAV + SIDEBAR
+// ============================================================
+function updateProgress(){
+  var total = totalLessons();
+  var done = doneLessons();
+  var pct = total ? Math.round(done / total * 100) : 0;
+
+  document.getElementById('navFill').style.width = pct + '%';
+  document.getElementById('navPct').textContent = pct + '%';
+  document.getElementById('sbFill').style.width = pct + '%';
+  document.getElementById('sbDone').textContent = done + ' done';
+  document.getElementById('sbTotal').textContent = total + ' total';
+}
+
+function buildSidebar(){
+  updateProgress();
+  var html = '';
+  CURRICULUM.forEach(function(sec, si){
+    var dc = secDoneLessons(si);
+    var tc = sec.lessons.length;
+    var isOpen = si === ST.secIdx;
+    var allDone = dc === tc;
+    var dotCls = allDone ? 'dot-done' : (isOpen ? 'dot-active' : 'dot-locked');
+    var dotTxt = allDone ? '✓' : (isOpen ? '→' : '●');
+
+    html += '<div class="sb-sec' + (isOpen ? ' sb-open' : '') + '">';
+    html += '<button class="sb-sec-btn" onclick="selectSection(' + si + ')">';
+    html += '<span class="sb-sec-num">0' + (si+1) + '</span>';
+    html += '<span class="sb-sec-name">' + sec.title + '</span>';
+    html += '<span class="sb-sec-dot ' + dotCls + '">' + dotTxt + '</span>';
+    html += '</button>';
+
+    if(isOpen){
+      html += '<div class="sb-lessons">';
+      sec.lessons.forEach(function(l, li){
+        var done2 = isDone(l.id);
+        var unl = isUnlocked(si, li);
+        var active = ST.lessonId === l.id;
+        var cls = 'sb-lesson' +
+          (active ? ' sl-active' : '') +
+          (done2 ? ' sl-done' : '') +
+          (!unl ? ' sl-locked' : '');
+        var click = unl ? 'onclick="startLesson(\'' + l.id + '\',' + si + ')"' : '';
+        html += '<div class="' + cls + '" ' + click + '>';
+        html += '<span class="sl-dot"></span>';
+        html += '<span>' + (li+1) + '. ' + l.title + '</span>';
+        if(done2) html += '<span class="sl-ck">✓</span>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  document.getElementById('sbScroll').innerHTML = html;
+}
+
+// ============================================================
+// HOME VIEW
+// ============================================================
+function goHome(){
+  ST.lessonId = null;
+  buildSidebar();
+  renderHome(ST.secIdx);
+}
+
+function selectSection(si){
+  ST.secIdx = si;
+  ST.lessonId = null;
+  buildSidebar();
+  renderHome(si);
+}
+
+function renderHome(si){
+  var sec = CURRICULUM[si];
+  var dc = secDoneLessons(si);
+  var tc = sec.lessons.length;
+  var pct = tc ? Math.round(dc / tc * 100) : 0;
+  var allDone = dc === tc;
+  var nextSi = si + 1;
+  var circ = 2 * Math.PI * 28;
+  var offset = circ * (1 - pct / 100);
+
+  var html = '';
+
+  // Hero card
+  html += '<div class="sec-hero">';
+  html += '<div class="hero-eyebrow">Section ' + (si+1) + ' of ' + CURRICULUM.length + '</div>';
+  html += '<div class="hero-title">' + sec.title + '</div>';
+  html += '<div class="hero-desc">' + sec.desc + '</div>';
+  html += '<div class="hero-chips">';
+  html += '<span class="hchip">📚 ' + tc + ' lessons</span>';
+  html += '<span class="hchip">✅ ' + dc + ' done</span>';
+  html += '<span class="hchip">🏆 ' + pct + '%</span>';
+  html += '</div>';
+  html += '<div class="hero-ring">';
+  html += '<svg width="72" height="72">';
+  html += '<circle cx="36" cy="36" r="28" stroke="#1c2035" stroke-width="5" fill="none"/>';
+  html += '<circle cx="36" cy="36" r="28" stroke="' + sec.color + '" stroke-width="5" fill="none"';
+  html += ' stroke-linecap="round"';
+  html += ' stroke-dasharray="' + circ.toFixed(1) + '"';
+  html += ' stroke-dashoffset="' + offset.toFixed(1) + '"';
+  html += ' transform="rotate(-90 36 36)"/>';
+  html += '</svg>';
+  html += '<div class="hero-ring-pct">' + pct + '%</div>';
+  html += '</div>';
+  html += '</div>';
+
+  // Lessons list
+  html += '<div class="panel-label">Lessons in This Section</div>';
+  html += '<div class="lessons-list">';
+  sec.lessons.forEach(function(l, li){
+    var done2 = isDone(l.id);
+    var unl = isUnlocked(si, li);
+    var active = ST.lessonId === l.id && !done2;
+    var pr = PROG[l.id];
+
+    var cls = 'lesson-row' +
+      (done2 ? ' lr-done' : '') +
+      (active ? ' lr-active' : '') +
+      (!unl ? ' lr-locked' : '');
+
+    var click = unl ? 'onclick="startLesson(\'' + l.id + '\',' + si + ')"' : '';
+    var typeCls = l.type === 'learn' ? 'tt-learn' : (l.type === 'practice' ? 'tt-practice' : 'tt-project');
+
+    html += '<div class="' + cls + '" ' + click + '>';
+    if(active) html += '<div class="lr-pulse"></div>';
+    html += '<div class="lr-num">' + String(li+1).padStart(2,'0') + '</div>';
+    html += '<div class="lr-body">';
+    html += '<div class="lr-title">' + l.title + '</div>';
+    html += '<div class="lr-sub">' + l.sub + '</div>';
+    html += '</div>';
+    html += '<div class="lr-right">';
+    html += '<span class="type-tag ' + typeCls + '">' + l.type + '</span>';
+    if(done2){
+      html += '<div class="lr-check">✓</div>';
+    } else if(pr && pr.score !== undefined){
+      html += '<span class="lr-score">' + pr.score + '/10</span>';
+    } else if(!unl){
+      html += '<span class="lr-lock">🔒</span>';
+    }
+    html += '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // Next section / completion card
+  if(allDone && nextSi < CURRICULUM.length){
+    var ns = CURRICULUM[nextSi];
+    html += '<div class="next-sec-card">';
+    html += '<div>';
+    html += '<div class="nsc-label">🎉 Section complete! Up next:</div>';
+    html += '<div class="nsc-title">' + ns.title + '</div>';
+    html += '<div class="nsc-desc">' + ns.desc + '</div>';
+    html += '<button class="nsc-btn" onclick="selectSection(' + nextSi + ')">Start Section →</button>';
+    html += '</div>';
+    html += '</div>';
+  } else if(allDone && nextSi >= CURRICULUM.length){
+    html += '<div class="next-sec-card">';
+    html += '<div><div class="nsc-label">🏆 All sections complete!</div>';
+    html += '<div class="nsc-title">You have finished the course!</div>';
+    html += '<div class="nsc-desc">You know the fundamentals of Python. Keep building projects!</div>';
+    html += '</div></div>';
+  } else {
+    html += '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:14px 16px;text-align:center;color:var(--text2);font-size:12px;">';
+    html += '💡 Complete each lesson in order to unlock the next one.';
+    html += '</div>';
+  }
+
+  document.getElementById('home-panel').innerHTML = html;
+  showPanel('home-panel');
+}
+
+// ============================================================
+// QUIZ ENGINE
+// ============================================================
+function startLesson(lid, si){
+  var sec = CURRICULUM[si];
+  var lesson = null;
+  for(var i = 0; i < sec.lessons.length; i++){
+    if(sec.lessons[i].id === lid){ lesson = sec.lessons[i]; break; }
+  }
+  if(!lesson) return;
+
+  ST.lessonId = lid;
+  ST.secIdx = si;
+  ST.quizData = {
+    lid: lid,
+    questions: lesson.questions,
+    cur: 0,
+    score: 0,
+    answered: false
+  };
+
+  document.getElementById('qzName').textContent = lesson.title;
+  buildSidebar();
+  renderQuestion();
+  showPanel('quiz-panel');
+}
+
+function renderQuestion(){
+  var qd = ST.quizData;
+  var q = qd.questions[qd.cur];
+  var total = qd.questions.length;
+  var pct = Math.round((qd.cur / total) * 100);
+
+  document.getElementById('qzCtr').textContent = (qd.cur+1) + ' / ' + total;
+  document.getElementById('qzProg').style.width = pct + '%';
+
+  var nb = document.getElementById('btnNext');
+  nb.classList.remove('btn-show');
+  nb.textContent = qd.cur < total - 1 ? 'Next Question →' : 'See Results →';
+
+  var html = '<div class="q-card">';
+  html += '<div class="q-eyebrow">Question ' + (qd.cur+1) + ' of ' + total + '</div>';
+  html += '<div class="q-text">' + q.q + '</div>';
+  if(q.code){
+    html += '<pre class="q-code">' + highlight(q.code) + '</pre>';
+  }
+  html += '</div>';
+
+  html += '<div class="opts" id="opts">';
+  var letters = ['A','B','C','D'];
+  for(var i = 0; i < q.opts.length; i++){
+    html += '<div class="opt" id="opt' + i + '" onclick="pickAnswer(' + i + ')">';
+    html += '<div class="opt-ltr">' + letters[i] + '</div>';
+    html += '<div class="opt-txt">' + q.opts[i] + '</div>';
+    html += '</div>';
+  }
+  html += '</div>';
+  html += '<div class="feedback" id="feedback"></div>';
+
+  document.getElementById('qArea').innerHTML = html;
+  qd.answered = false;
+}
+
+function pickAnswer(idx){
+  var qd = ST.quizData;
+  if(qd.answered) return;
+  qd.answered = true;
+
+  var q = qd.questions[qd.cur];
+  var correct = q.ans;
+  var isOk = idx === correct;
+  if(isOk) qd.score++;
+
+  document.querySelectorAll('.opt').forEach(function(o){ o.classList.add('opt-dis'); });
+
+  var chosen = document.getElementById('opt' + idx);
+  if(chosen) chosen.classList.add(isOk ? 'opt-ok' : 'opt-ng');
+  if(!isOk){
+    var cor = document.getElementById('opt' + correct);
+    if(cor) cor.classList.add('opt-ok');
+  }
+
+  var fb = document.getElementById('feedback');
+  if(fb){
+    fb.className = 'feedback fb-show ' + (isOk ? 'fb-ok' : 'fb-ng');
+    fb.innerHTML = '<span class="fb-ico">' + (isOk ? '🎯' : '💡') + '</span>';
+    fb.innerHTML += '<div class="fb-body"><strong>' + (isOk ? 'Correct!' : 'Not quite.') + '</strong>' + q.exp + '</div>';
+  }
+
+  document.getElementById('btnNext').classList.add('btn-show');
+}
+
+function nextQ(){
+  var qd = ST.quizData;
+  if(!qd.answered) return;
+  qd.cur++;
+  if(qd.cur < qd.questions.length){
+    renderQuestion();
+    document.getElementById('quiz-panel').scrollTop = 0;
+  } else {
+    showResults();
+  }
+}
+
+function exitQuiz(){
+  ST.lessonId = null;
+  buildSidebar();
+  renderHome(ST.secIdx);
+}
+
+// ============================================================
+// RESULTS
+// ============================================================
+function showResults(){
+  var qd = ST.quizData;
+  var score = qd.score;
+  var total = qd.questions.length;
+  var pct = Math.round((score / total) * 100);
+  var passed = pct >= 60;
+
+  var prev = PROG[qd.lid] || {};
+  PROG[qd.lid] = { done: passed || !!prev.done, score: score, pct: pct };
+  ST.lessonId = null;
+  persist();
+  buildSidebar();
+  updateProgress();
+
+  var stars = pct >= 90 ? 3 : pct >= 70 ? 2 : pct >= 60 ? 1 : 0;
+  var emojis = ['📚','✅','⭐','🏆'];
+  var msgs = [
+    'Keep going — every wrong answer teaches you something.',
+    'Good start! Review the explanations and try again.',
+    'Well done! Lesson complete. Keep the momentum!',
+    'Perfect! You really know this material.'
+  ];
+
+  var html = '';
+  html += '<div class="r-emoji">' + emojis[stars] + '</div>';
+  html += '<div class="r-stars">' + '⭐'.repeat(stars) + '☆'.repeat(3-stars) + '</div>';
+  html += '<div class="r-title">' + (passed ? 'Lesson Complete!' : 'Nice Try!') + '</div>';
+  html += '<div class="r-fraction">' + score + '<span style="font-size:28px;color:var(--text2)">/' + total + '</span></div>';
+  html += '<div class="r-pct-label">' + pct + '% correct</div>';
+  html += '<div class="r-msg">' + msgs[stars] + '</div>';
+  html += '<div class="r-breakdown">';
+  html += '<div class="rb-item"><div class="rb-val c-g">' + score + '</div><div class="rb-lbl">Correct</div></div>';
+  html += '<div class="rb-item"><div class="rb-val c-r">' + (total-score) + '</div><div class="rb-lbl">Wrong</div></div>';
+  html += '<div class="rb-item"><div class="rb-val c-y">' + pct + '%</div><div class="rb-lbl">Score</div></div>';
+  html += '</div>';
+  html += '<div class="r-actions">';
+  html += '<button class="btn-ghost" onclick="retryLesson()">🔄 Retry</button>';
+
+  var si = ST.secIdx;
+  var sec = CURRICULUM[si];
+  var secAllDone = sec.lessons.every(function(l){ return isDone(l.id); });
+  if(secAllDone && si+1 < CURRICULUM.length){
+    html += '<button class="btn-primary" onclick="afterResult()">🚀 Next Section</button>';
+  } else {
+    html += '<button class="btn-primary" onclick="afterResult()">Back to Section</button>';
+  }
+  html += '</div>';
+  if(!passed){
+    html += '<div class="r-note">Need 60%+ to unlock the next lesson</div>';
+  }
+
+  document.getElementById('result-panel').innerHTML = html;
+  showPanel('result-panel');
+
+  if(passed && secAllDone){
+    setTimeout(function(){ showSectionComplete(si); }, 1000);
+  }
+}
+
+function retryLesson(){
+  var lid = ST.quizData.lid;
+  var si = ST.secIdx;
+  startLesson(lid, si);
+}
+
+function afterResult(){
+  var si = ST.secIdx;
+  var sec = CURRICULUM[si];
+  var secAllDone = sec.lessons.every(function(l){ return isDone(l.id); });
+  if(secAllDone && si+1 < CURRICULUM.length){
+    selectSection(si+1);
+  } else {
+    renderHome(si);
+  }
+}
+
+
+function showSectionComplete(si){
+  var sec = CURRICULUM[si];
+  var nextSi = si + 1;
+  var dc = secDoneLessons(si);
+  var total = totalLessons();
+  var done = doneLessons();
+  var pct = total ? Math.round(done / total * 100) : 0;
+
+  var html = '';
+  html += '<div class="sc-banner">🎉🐍🎉</div>';
+  html += '<div class="sc-title">Section Complete!</div>';
+  html += '<div class="sc-sec-name">' + sec.title + '</div>';
+  html += '<div class="sc-desc">You mastered all ' + dc + ' lessons in this section. Excellent work!</div>';
+  html += '<div class="sc-stats">';
+  html += '<div class="sc-stat"><div class="sc-stat-val">' + dc + '</div><div class="sc-stat-lbl">Lessons Done</div></div>';
+  html += '<div class="sc-stat"><div class="sc-stat-val">' + CURRICULUM.length + '</div><div class="sc-stat-lbl">Sections</div></div>';
+  html += '<div class="sc-stat"><div class="sc-stat-val">' + pct + '%</div><div class="sc-stat-lbl">Overall</div></div>';
+  html += '</div>';
+
+  if(nextSi < CURRICULUM.length){
+    html += '<button class="sc-next-btn" onclick="selectSection(' + nextSi + ')">🚀 Start: ' + CURRICULUM[nextSi].title + '</button>';
+  } else {
+    html += '<div class="sc-finish">🏆 You completed the entire Python course! 🏆</div>';
+  }
+  html += '<button class="btn-ghost" onclick="renderHome(' + si + ')">Back to Section</button>';
+
+  document.getElementById('sc-panel').innerHTML = html;
+  showPanel('sc-panel');
+}
+
+// ============================================================
+// BOOT
+// ============================================================
+buildSidebar();
+renderHome(0);
+</script>
+</body>
+</html>
